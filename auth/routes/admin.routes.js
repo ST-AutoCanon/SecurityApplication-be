@@ -1,0 +1,34 @@
+import express from "express";
+import * as controller from "../controllers/admin.controller.js";
+import { auth } from "../../middleware/auth.js";
+
+const router = express.Router();
+
+router.use(auth);
+
+/* Admin Only */
+const adminOnly = (req, res, next) => {
+  if (req.user?.role !== "admin") {
+    return res.status(403).json({
+      success: false,
+      message: "Admin only",
+    });
+  }
+
+  next();
+};
+
+router.use(adminOnly);
+
+/* Create Security User */
+// router.post(
+//   "/organisation/:organisationId/security",
+//   controller.createSecurityUser,
+// );
+
+router.post("/security", controller.createSecurityUser);
+router.get("/delivery-persons", controller.getAllDeliveryPersons);
+// admin.routes.js
+
+router.get("/business-data", controller.getAllBusinessData);
+export default router;
