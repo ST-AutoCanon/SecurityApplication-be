@@ -92,7 +92,6 @@ export const registerOrganisation = async (organisationData, admin) => {
     // 2. system tables (NEW)
     await createSystemTables(db, safeSchema);
 
-
     /* -----------------------------------
        CREATE SCHEMA IN BUSINESS DB
     ------------------------------------*/

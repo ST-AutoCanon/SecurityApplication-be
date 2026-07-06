@@ -7,3 +7,4 @@ router.get("/organisations", controller.getOrganisations);
 router.post("/:organisationId/security", controller.createSecurityUser);
 
 export default router;
+    
