@@ -54,10 +54,12 @@ export const createSecurityUserService = async (
 
     await client.query("COMMIT");
 
-    await sendSecurityInvitation({
+    sendSecurityInvitation({
       email: user.email,
       firstName: user.first_name,
       token: user.invitation_token,
+    }).catch((err) => {
+      console.error("Failed to send invitation:", err);
     });
 
     return {
@@ -100,43 +102,6 @@ export const fetchAllDeliveryPersons = async (client) => {
     data: deliveryPersons,
   };
 };
-
-// export const fetchAllBusinessData = async (client) => {
-
-//   const schemas = await getOrganisationSchemas(client);
-
-//   const output = {};
-
-//   for (const { schema_name } of schemas) {
-//     const tables = await getTables(client, schema_name);
-
-//     for (const { table_name } of tables) {
-//       try {
-//         const rows = await getTableData(client, schema_name, table_name);
-
-//         if (!output[table_name]) {
-//           output[table_name] = [];
-//         }
-
-//         output[table_name].push(...rows);
-//       } catch (err) {
-//         console.log(err.message);
-//       }
-//     }
-//   }
-
-//   const result = {};
-
-//   for (const tableName in output) {
-//     result[tableName] = {
-//       columns: Object.keys(output[tableName][0] ?? {}),
-//       rows: output[tableName],
-//     };
-//   }
-
-//   return result;
-// };
-//////
 
 export const fetchAllBusinessData = async (
   businessClient,
@@ -187,4 +152,278 @@ export const fetchAllBusinessData = async (
   console.log("👉 FINAL OUTPUT:", output);
 
   return output;
+};
+
+export const getSecurityUsersService = async (organisationId) => {
+  const client = await masterAuthDB.connect();
+
+  try {
+    const organisation = await model.getOrganisationById(
+      client,
+      organisationId,
+    );
+
+    if (!organisation) {
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    const users = await model.getSecurityUsers(client, organisationId);
+
+    return {
+      success: true,
+      message: "Security users fetched successfully",
+      data: users,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    client.release();
+  }
+};
+
+export const getSecurityUserByIdService = async (organisationId, userId) => {
+  const client = await masterAuthDB.connect();
+
+  try {
+    const user = await model.getSecurityUserById(
+      client,
+      organisationId,
+      userId,
+    );
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Security user not found",
+      };
+    }
+
+    return {
+      success: true,
+      data: user,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    client.release();
+  }
+};
+
+export const updateSecurityUserService = async (
+  organisationId,
+  userId,
+  securityData,
+) => {
+  const client = await masterAuthDB.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const organisation = await model.getOrganisationById(
+      client,
+      organisationId,
+    );
+
+    if (!organisation) {
+      await client.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    const updatedUser = await model.updateSecurityUser(
+      client,
+      organisationId,
+      userId,
+      securityData,
+    );
+
+    if (!updatedUser) {
+      await client.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Security user not found",
+      };
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      success: true,
+      message: "Security user updated successfully",
+      data: updatedUser,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    client.release();
+  }
+};
+
+export const deleteSecurityUserService = async (organisationId, userId) => {
+  const client = await masterAuthDB.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const deletedUser = await model.deleteSecurityUser(
+      client,
+      organisationId,
+      userId,
+    );
+
+    if (!deletedUser) {
+      await client.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Security user not found",
+      };
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      success: true,
+      message: "Security user deleted successfully",
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    client.release();
+  }
+};
+
+export const deactivateSecurityUserService = async (organisationId, userId) => {
+  const client = await masterAuthDB.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Check organisation exists
+    const organisation = await model.getOrganisationById(
+      client,
+      organisationId,
+    );
+
+    if (!organisation) {
+      await client.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    // Deactivate user
+    const user = await model.deactivateSecurityUser(
+      client,
+      organisationId,
+      userId,
+    );
+
+    if (!user) {
+      await client.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Security user not found",
+      };
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      success: true,
+      message: "Security user deactivated successfully",
+      data: user,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    client.release();
+  }
+};
+
+export const activateSecurityUserService = async (organisationId, userId) => {
+  const client = await masterAuthDB.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    // Check organisation exists
+    const organisation = await model.getOrganisationById(
+      client,
+      organisationId,
+    );
+
+    if (!organisation) {
+      await client.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    // Activate user
+    const user = await model.activateSecurityUser(
+      client,
+      organisationId,
+      userId,
+    );
+
+    if (!user) {
+      await client.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Security user not found",
+      };
+    }
+
+    await client.query("COMMIT");
+
+    return {
+      success: true,
+      message: "Security user activated successfully",
+      data: user,
+    };
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    client.release();
+  }
 };

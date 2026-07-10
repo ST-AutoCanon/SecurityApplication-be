@@ -27,6 +27,21 @@ router.use(adminOnly);
 // );
 
 router.post("/security", controller.createSecurityUser);
+
+router.get("/security", controller.getSecurityUsers);
+
+router.get("/security/:id", controller.getSecurityUserById);
+
+router.put("/security/:id", controller.updateSecurityUser);
+
+// Soft Delete
+router.patch("/security/:id/deactivate", controller.deactivateSecurityUser);
+
+router.patch("/security/:id/activate", controller.activateSecurityUser);
+
+// Hard Delete
+router.delete("/security/:id", controller.deleteSecurityUser);
+
 router.get("/delivery-persons", controller.getAllDeliveryPersons);
 // admin.routes.js
 

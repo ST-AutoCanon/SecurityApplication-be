@@ -2,7 +2,11 @@ import dotenv from "dotenv";
 dotenv.config(); // must be first
 
 import pg from "pg";
+
+pg.types.setTypeParser(1082, (value) => value);
+
 const { Pool } = pg;
+
 
 const fourthDB = new Pool({
   host: process.env.DB4_HOST,

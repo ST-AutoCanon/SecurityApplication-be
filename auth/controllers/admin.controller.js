@@ -59,7 +59,6 @@ export const getAllDeliveryPersons = async (req, res) => {
   }
 };
 
-
 export const getAllBusinessData = async (req, res) => {
   const organisationId = req.user.organisation_id;
   const orgType = req.user.org_type?.toLowerCase();
@@ -93,5 +92,123 @@ export const getAllBusinessData = async (req, res) => {
   } finally {
     businessClient.release();
     authClient.release();
+  }
+};
+
+export const getSecurityUsers = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+
+    const result = await service.getSecurityUsersService(organisationId);
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Get Security Users Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+export const getSecurityUserById = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const { id } = req.params;
+
+    const result = await service.getSecurityUserByIdService(organisationId, id);
+
+    return res.status(result.success ? 200 : 404).json(result);
+  } catch (error) {
+    console.error("Get Security User Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+export const updateSecurityUser = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const { id } = req.params;
+
+    const result = await service.updateSecurityUserService(
+      organisationId,
+      id,
+      req.body,
+    );
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Update Security User Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+
+export const deleteSecurityUser = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const { id } = req.params;
+
+    const result = await service.deleteSecurityUserService(organisationId, id);
+
+    return res.status(result.success ? 200 : 404).json(result);
+  } catch (error) {
+    console.error("Delete Security User Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+export const deactivateSecurityUser = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const { id } = req.params;
+
+    const result = await service.deactivateSecurityUserService(
+      organisationId,
+      id,
+    );
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Deactivate Security User Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
+export const activateSecurityUser = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const { id } = req.params;
+
+    const result = await service.activateSecurityUserService(
+      organisationId,
+      id,
+    );
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Activate Security User Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
   }
 };
