@@ -74,21 +74,6 @@ export const getMasterUsers = async () => {
 /* =========================
    ORG ADMIN LOGIN
 ========================= */
-// export const findOrgAdminByEmail = async (email, organisationId) => {
-//   const result = await masterAuthDB.query(
-//     `
-//     SELECT *
-//     FROM auth.users
-//     WHERE email = $1
-//       AND organisation_id = $2
-//       AND role = 'admin'
-//     LIMIT 1
-//     `,
-//     [email, organisationId],
-//   );
-
-//   return result.rows[0];
-// };
 export const findOrgAdminByEmail = async (email, organisationId) => {
   const result = await masterAuthDB.query(
     `

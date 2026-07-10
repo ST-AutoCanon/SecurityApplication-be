@@ -65,7 +65,14 @@ export const registerOrganisation = async (organisationData, admin) => {
     });
 
     // create admin
-    await model.createOrgAdmin(client, organisation.id, admin);
+
+    const adminUser = await model.createOrgAdmin(
+      client,
+      organisation.id,
+      admin,
+    );
+
+    console.log("✅ Admin created:", adminUser);
 
     const securityUsers = await model.createOrgSecurityUsers(
       client,
@@ -75,6 +82,12 @@ export const registerOrganisation = async (organisationData, admin) => {
 
     await client.query("COMMIT");
 
+
+    await sendSecurityInvitation({
+  email: adminUser.email,
+  firstName: adminUser.first_name,
+  token: adminUser.invitation_token,
+});
     for (const user of securityUsers) {
       await sendSecurityInvitation({
         email: user.email,
@@ -131,22 +144,22 @@ export const updateOrganisationService = async (id, organisationData) => {
       };
     }
 
-    if (organisationData.admin?.email) {
-      const existingUser = await model.getUserByOrgAndEmail(
-        client,
-        id,
-        organisationData.admin.email,
-      );
+    // if (organisationData.admin?.email) {
+    //   const existingUser = await model.getUserByOrgAndEmail(
+    //     client,
+    //     id,
+    //     organisationData.admin.email,
+    //   );
 
-      if (existingUser) {
-        await client.query("ROLLBACK");
+    //   if (existingUser) {
+    //     await client.query("ROLLBACK");
 
-        return {
-          success: false,
-          message: "Admin email already exists in this organisation",
-        };
-      }
-    }
+    //     return {
+    //       success: false,
+    //       message: "Admin email already exists in this organisation",
+    //     };
+    //   }
+    // }
 
     const organisation = await model.updateOrganisation(
       client,

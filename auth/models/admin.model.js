@@ -82,26 +82,13 @@ export const createSecurityUser = async (client, organisationId, security) => {
   return result.rows[0];
 };
 
-// admin.model.js
-
-// export const getOrganisationSchemas = async (client) => {
-//   const result = await client.query(`
-//     SELECT schema_name
-//     FROM information_schema.schemata
-//     WHERE schema_name LIKE 'org_%'
-//     ORDER BY schema_name;
-//   `);
-
-//   return result.rows;
-// };
-
 export const getOrganisationSchema = async (client, organisationId) => {
   console.log(
     "organisationId received:",
     organisationId,
     typeof organisationId,
   );
-  
+
   const result = await client.query(
     `
     SELECT schema_name
@@ -115,7 +102,6 @@ export const getOrganisationSchema = async (client, organisationId) => {
   return result.rows[0];
 };
 
-
 export const getDeliveryPersons = async (client, schemaName) => {
   const result = await client.query(`
     SELECT
@@ -126,22 +112,6 @@ export const getDeliveryPersons = async (client, schemaName) => {
 
   return result.rows;
 };
-
-
-
-// export const getTables = async (client, schemaName) => {
-//   const result = await client.query(
-//     `
-//     SELECT table_name
-//     FROM information_schema.tables
-//     WHERE table_schema = $1
-//       AND table_type = 'BASE TABLE'
-//     `,
-//     [schemaName],
-//   );
-
-//   return result.rows;
-// };
 
 export const getTables = async (client, schemaName) => {
   const result = await client.query(
@@ -155,10 +125,9 @@ export const getTables = async (client, schemaName) => {
     [schemaName],
   );
 
-  console.log('result in gettable model:', result);
+  console.log("result in gettable model:", result);
   return result.rows;
 };
-
 
 export const getTableData = async (client, schemaName, tableName) => {
   const result = await client.query(`
@@ -169,4 +138,157 @@ export const getTableData = async (client, schemaName, tableName) => {
 
   console.log("result in get tale dta modal:", result);
   return result.rows;
+};
+
+export const getSecurityUsers = async (client, organisationId) => {
+  const result = await client.query(
+    `
+    SELECT
+      id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      role,
+      is_active,
+      created_at
+    FROM auth.users
+    WHERE organisation_id = $1
+      AND role = 'security'
+    ORDER BY created_at DESC
+    `,
+    [organisationId],
+  );
+
+  return result.rows;
+};
+
+export const getSecurityUserById = async (client, organisationId, userId) => {
+  const result = await client.query(
+    `
+    SELECT
+      id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      role,
+      is_active
+    FROM auth.users
+    WHERE id = $1
+      AND organisation_id = $2
+      AND role = 'security'
+    LIMIT 1
+    `,
+    [userId, organisationId],
+  );
+
+  return result.rows[0];
+};
+
+export const updateSecurityUser = async (
+  client,
+  organisationId,
+  userId,
+  security,
+) => {
+  const result = await client.query(
+    `
+    UPDATE auth.users
+    SET
+      first_name = $1,
+      last_name = $2,
+      email = $3,
+      phone = $4,
+      is_active = $5,
+      updated_at = NOW()
+    WHERE id = $6
+      AND organisation_id = $7
+      AND role = 'security'
+    RETURNING
+      id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      role,
+      is_active
+    `,
+    [
+      security.first_name,
+      security.last_name,
+      security.email,
+      security.phone,
+      security.is_active,
+      userId,
+      organisationId,
+    ],
+  );
+
+  return result.rows[0];
+};
+
+export const deleteSecurityUser = async (client, organisationId, userId) => {
+  const result = await client.query(
+    `
+    DELETE FROM auth.users
+    WHERE id = $1
+      AND organisation_id = $2
+      AND role = 'security'
+    RETURNING id
+    `,
+    [userId, organisationId],
+  );
+
+  return result.rows[0];
+};
+
+export const deactivateSecurityUser = async (
+  client,
+  organisationId,
+  userId,
+) => {
+  const result = await client.query(
+    `
+    UPDATE auth.users
+    SET
+      is_active = false,
+      updated_at = NOW()
+    WHERE id = $1
+      AND organisation_id = $2
+      AND role = 'security'
+    RETURNING
+      id,
+      first_name,
+      last_name,
+      email,
+      is_active
+    `,
+    [userId, organisationId],
+  );
+
+  return result.rows[0];
+};
+
+export const activateSecurityUser = async (client, organisationId, userId) => {
+  const result = await client.query(
+    `
+    UPDATE auth.users
+    SET
+      is_active = true,
+      updated_at = NOW()
+    WHERE id = $1
+      AND organisation_id = $2
+      AND role = 'security'
+    RETURNING
+      id,
+      first_name,
+      last_name,
+      email,
+      is_active
+    `,
+    [userId, organisationId],
+  );
+
+  return result.rows[0];
 };

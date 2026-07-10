@@ -1,5 +1,5 @@
 // models/organisation.model.js
-
+import crypto from "crypto";
 import masterAuthDB from "../../config/masterAuthDB.js";
 
 /* Get Last Org ID */
@@ -97,13 +97,48 @@ export const getUserByEmail = async (client, email) => {
 };
 
 
+// export const createOrgAdmin = async (client, organisationId, admin) => {
+//   const { first_name, last_name, email, phone } = admin;
+
+//   const password =
+//     "$2b$10$7WNEDjohk7W5RUwCozXkKuYYKOkJsIi1MCcBCybQlAWXcEYHRceQ2";
+
+//   await client.query(
+//     `
+//     INSERT INTO auth.users
+//     (
+//       organisation_id,
+//       first_name,
+//       last_name,
+//       email,
+//       phone,
+//       password,
+//       role,
+//       is_active
+//     )
+//     VALUES
+//     (
+//       $1,
+//       $2,
+//       $3,
+//       $4,
+//       $5,
+//       $6,
+//       'admin',
+//       true
+//     )
+//     `,
+//     [organisationId, first_name, last_name, email, phone, password],
+//   );
+// };
+
+
 export const createOrgAdmin = async (client, organisationId, admin) => {
   const { first_name, last_name, email, phone } = admin;
 
-  const password =
-    "$2b$10$7WNEDjohk7W5RUwCozXkKuYYKOkJsIi1MCcBCybQlAWXcEYHRceQ2";
+  const token = crypto.randomBytes(32).toString("hex");
 
-  await client.query(
+  const result = await client.query(
     `
     INSERT INTO auth.users
     (
@@ -114,7 +149,9 @@ export const createOrgAdmin = async (client, organisationId, admin) => {
       phone,
       password,
       role,
-      is_active
+      is_active,
+      invitation_token,
+      invitation_expires_at
     )
     VALUES
     (
@@ -123,15 +160,26 @@ export const createOrgAdmin = async (client, organisationId, admin) => {
       $3,
       $4,
       $5,
-      $6,
+      '',
       'admin',
-      true
+      true,
+      $6,
+      NOW() + INTERVAL '24 hours'
     )
+    RETURNING
+      id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      role,
+      invitation_token;
     `,
-    [organisationId, first_name, last_name, email, phone, password],
+    [organisationId, first_name, last_name, email, phone, token],
   );
-};
 
+  return result.rows[0];
+};
 
 export const createOrgSecurityUsers = async (
   client,
@@ -358,6 +406,7 @@ export const updateOrganisation = async (
 
   const organisation = orgResult.rows[0];
 
+  
   if (!organisation) {
     return null;
   }
