@@ -76,6 +76,14 @@ export const loginService = async (email, password, organisation_id) => {
     };
   }
 
+  if (!orgUser.is_active) {
+    return {
+      success: false,
+      message:
+        "Your account has been deactivated. Please contact the administrator.",
+    };
+  }
+
   const isMatch = await bcrypt.compare(password, orgUser.password);
 
   if (!isMatch) {

@@ -33,7 +33,12 @@ export const createRecord = async (req, res) => {
     payload,
   );
 
-  res.json(result);
+  // res.json(result);
+  if (!result.success) {
+    return res.status(400).json(result);
+  }
+
+  return res.status(201).json(result);
 };
 
 
