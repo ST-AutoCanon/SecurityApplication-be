@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
 
 import orgSuperAdminRoutes from "./auth/routes/organisationSuperAdmin.routes.js";
 
@@ -57,6 +58,12 @@ app.get("/", (req, res) => {
     message: "Security Visitor Management API Running",
   });
 });
+
+
+app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "security", "uploads")),
+);
 
 // =========================
 // Security Module Routes

@@ -7,7 +7,7 @@ export const createSystemTables = async (db, schema) => {
       full_name TEXT,
       distance DOUBLE PRECISION,
       punch_type VARCHAR(10) NOT NULL,
-      punch_time TIMESTAMP DEFAULT NOW()
+      punch_time TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
 };

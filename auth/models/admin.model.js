@@ -129,6 +129,20 @@ export const getTables = async (client, schemaName) => {
   return result.rows;
 };
 
+// export const getTableData = async (client, schemaName, tableName) => {
+//   const result = await client.query(`
+//     SELECT *,
+//            '${schemaName}' AS organisation_schema
+//     FROM "${schemaName}"."${tableName}"
+//   `);
+
+//   const filteredRows = result.rows.map(
+//     ({ organisation_schema, face_descriptor, ...rest }) => rest,
+//   );
+
+//   return filteredRows;
+// };
+
 export const getTableData = async (client, schemaName, tableName) => {
   const result = await client.query(`
     SELECT *,
@@ -136,8 +150,44 @@ export const getTableData = async (client, schemaName, tableName) => {
     FROM "${schemaName}"."${tableName}"
   `);
 
-  console.log("result in get tale dta modal:", result);
-  return result.rows;
+  result.rows.forEach((row) => {
+    if (row.punch_time) {
+      console.log("punch_time:", row.punch_time);
+      console.log("typeof:", typeof row.punch_time);
+      console.log("instanceof Date:", row.punch_time instanceof Date);
+      console.log("toString():", row.punch_time.toString());
+      console.log("toISOString():", row.punch_time.toISOString());
+    }
+  });
+
+  const filteredRows = result.rows.map(
+    ({ organisation_schema, face_descriptor, ...rest }) => {
+      if (rest.profile_photo) {
+        rest.profile_photo = `${process.env.BASE_URL}/${rest.profile_photo}`;
+      }
+      // if (rest.punch_time instanceof Date) {
+      //   rest.punch_time = rest.punch_time.toLocaleString("sv-SE", {
+      //     timeZone: "Asia/Kolkata",
+      //   });
+      // }
+      if (rest.punch_time instanceof Date) {
+        rest.punch_time = rest.punch_time.toLocaleString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        });
+      }
+
+      return rest;
+    },
+  );
+
+  return filteredRows;
 };
 
 export const getSecurityUsers = async (client, organisationId) => {

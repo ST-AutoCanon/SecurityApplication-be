@@ -7,7 +7,6 @@ pg.types.setTypeParser(1082, (value) => value);
 
 const { Pool } = pg;
 
-
 const fourthDB = new Pool({
   host: process.env.DB4_HOST,
   user: process.env.DB4_USER,
@@ -18,6 +17,7 @@ const fourthDB = new Pool({
 
 fourthDB
   .connect()
+
   .then(() => console.log("📦 Fourth Database Connected"))
   .catch((err) => console.error("❌ Fourth DB Error:", err));
 

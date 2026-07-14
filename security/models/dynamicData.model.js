@@ -66,13 +66,41 @@ export const deleteDynamicRecord = async (db, schema, table, id) => {
   return result.rows[0];
 };
 
+// export const getTemplateFields = async (db, organisationId, templateId) => {
+//   const query = `
+//     SELECT
+//       ft.field_key,
+//       ft.field_label,
+//       dtf.is_required,
+//       ft.field_type_id
+//     FROM auth.dynamic_tables dt
+//     JOIN auth.dynamic_table_fields dtf
+//       ON dt.id = dtf.dynamic_table_id
+//     JOIN auth.field_templates ft
+//       ON ft.id = dtf.field_template_id
+//     WHERE dt.organisation_id = $1
+//       AND dt.template_id = $2
+//     ORDER BY dtf.display_order;
+//   `;
+
+//   const result = await db.query(query, [organisationId, templateId]);
+
+//   return result.rows;
+// };
+
+
+
 export const getTemplateFields = async (db, organisationId, templateId) => {
   const query = `
     SELECT
       ft.field_key,
       ft.field_label,
       dtf.is_required,
-      ft.field_type_id
+      ft.field_type_id,
+      ft.validation,
+      ft.options,
+      ft.placeholder,
+      ft.default_value
     FROM auth.dynamic_tables dt
     JOIN auth.dynamic_table_fields dtf
       ON dt.id = dtf.dynamic_table_id
@@ -87,6 +115,7 @@ export const getTemplateFields = async (db, organisationId, templateId) => {
 
   return result.rows;
 };
+
 export const getTemplate = async (db, organisationId, templateId) => {
   const query = `
     SELECT

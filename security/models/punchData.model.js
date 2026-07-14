@@ -83,10 +83,9 @@ INSERT INTO "${schema}".punch_logs
   user_id,
   full_name,
   distance,
-  punch_type,
-  punch_time
+  punch_type
 )
-VALUES ($1,$2,$3,$4,$5,$6)
+VALUES ($1,$2,$3,$4,$5)
     RETURNING *;
   `;
 
@@ -95,8 +94,8 @@ VALUES ($1,$2,$3,$4,$5,$6)
     data.user_id,
     data.full_name,
     data.distance,
-    data.punch_type,
-    data.punch_time,
+    data.punch_type
+
   ];
 
   const result = await db.query(query, values);
