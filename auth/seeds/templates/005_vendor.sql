@@ -37,30 +37,30 @@ VALUES -- 1. Company Name
         FALSE,
         1
     ),
-    -- 2. Contact Person
+-- 2. Full Name
+(
     (
-        (
-            SELECT id
-            FROM auth.table_templates
-            WHERE template_key = 'vendor'
-        ),
-        (
-            SELECT id
-            FROM auth.field_types
-            WHERE type_key = 'text'
-        ),
-        'contact_person',
-        'Contact Person',
-        'Enter Contact Person',
-        NULL,
-        '{"minLength":3,"maxLength":100}'::jsonb,
-        TRUE,
-        FALSE,
-        TRUE,
-        TRUE,
-        FALSE,
-        2
+        SELECT id
+        FROM auth.table_templates
+        WHERE template_key = 'vendor'
     ),
+    (
+        SELECT id
+        FROM auth.field_types
+        WHERE type_key = 'text'
+    ),
+    'full_name',
+    'Full Name',
+    'Enter Full Name',
+    NULL,
+    '{"minLength":3,"maxLength":100,"pattern":"^[A-Za-z]+(?:\\s+[A-Za-z]+)+$"}'::jsonb,
+    TRUE,
+    FALSE,
+    TRUE,
+    TRUE,
+    FALSE,
+    2
+),
     -- 3. Mobile Number
     (
         (
