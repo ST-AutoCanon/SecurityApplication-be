@@ -1,4 +1,5 @@
 export const createSystemTables = async (db, schema) => {
+  // Punch Logs
   await db.query(`
     CREATE TABLE IF NOT EXISTS "${schema}".punch_logs (
       id BIGSERIAL PRIMARY KEY,
@@ -10,4 +11,19 @@ export const createSystemTables = async (db, schema) => {
       punch_time TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
-};
+
+  // Face Details
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS "${schema}".face_details (
+      id BIGSERIAL PRIMARY KEY,
+      table_name TEXT NOT NULL,
+      record_id BIGINT NOT NULL,
+      face_descriptor VECTOR(128) NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+      CONSTRAINT face_details_record_unique
+      UNIQUE (table_name, record_id)
+    );
+  `);
+};;

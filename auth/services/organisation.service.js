@@ -4,9 +4,9 @@ import * as model from "../models/organisation.model.js";
 import hospitalDB from "../../config/dborghospital.js";
 import apartmentDB from "../../config/dborgap.js";
 import eventDB from "../../config/dborgevent.js"; // adjust if needed
-import { createTemplateTables } from "../../utils/createTemplateTables.js";
 import { sendSecurityInvitation } from "../services/mail.service.js";
 import { createSystemTables } from "../utils/createSystemTables.js";
+import { createTemplateTables } from "../utils/static_templates/createTemplateTables.js";
 /* ---------------------------
    GET DB BY ORG TYPE
 ----------------------------*/
@@ -82,12 +82,11 @@ export const registerOrganisation = async (organisationData, admin) => {
 
     await client.query("COMMIT");
 
-
     await sendSecurityInvitation({
-  email: adminUser.email,
-  firstName: adminUser.first_name,
-  token: adminUser.invitation_token,
-});
+      email: adminUser.email,
+      firstName: adminUser.first_name,
+      token: adminUser.invitation_token,
+    });
     for (const user of securityUsers) {
       await sendSecurityInvitation({
         email: user.email,
@@ -104,6 +103,9 @@ export const registerOrganisation = async (organisationData, admin) => {
 
     // 2. system tables (NEW)
     await createSystemTables(db, safeSchema);
+
+    // Create organisation-specific tables
+    await createTemplateTables(db, safeSchema, organisation.org_type);
 
     /* -----------------------------------
        CREATE SCHEMA IN BUSINESS DB

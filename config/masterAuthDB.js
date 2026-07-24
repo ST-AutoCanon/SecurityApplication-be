@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config(); // must be first
 
 import pg from "pg";
+// import pgvector from "pgvector/pg";
 
 pg.types.setTypeParser(1082, (value) => value);
 
@@ -14,6 +15,9 @@ const fourthDB = new Pool({
   database: process.env.DB4_NAME,
   port: Number(process.env.DB4_PORT),
 });
+
+
+// await pgvector.registerType(fourthDB);
 
 fourthDB
   .connect()

@@ -83,11 +83,11 @@ export const createSecurityUser = async (client, organisationId, security) => {
 };
 
 export const getOrganisationSchema = async (client, organisationId) => {
-  console.log(
-    "organisationId received:",
-    organisationId,
-    typeof organisationId,
-  );
+  // console.log(
+  //   "organisationId received:",
+  //   organisationId,
+  //   typeof organisationId,
+  // );
 
   const result = await client.query(
     `
@@ -98,7 +98,7 @@ export const getOrganisationSchema = async (client, organisationId) => {
     `,
     [organisationId],
   );
-  console.log("result in modal:", result);
+  // console.log("result in modal:", result);
   return result.rows[0];
 };
 
@@ -125,23 +125,9 @@ export const getTables = async (client, schemaName) => {
     [schemaName],
   );
 
-  console.log("result in gettable model:", result);
+  // console.log("result in gettable model:", result);
   return result.rows;
 };
-
-// export const getTableData = async (client, schemaName, tableName) => {
-//   const result = await client.query(`
-//     SELECT *,
-//            '${schemaName}' AS organisation_schema
-//     FROM "${schemaName}"."${tableName}"
-//   `);
-
-//   const filteredRows = result.rows.map(
-//     ({ organisation_schema, face_descriptor, ...rest }) => rest,
-//   );
-
-//   return filteredRows;
-// };
 
 export const getTableData = async (client, schemaName, tableName) => {
   const result = await client.query(`
@@ -150,15 +136,15 @@ export const getTableData = async (client, schemaName, tableName) => {
     FROM "${schemaName}"."${tableName}"
   `);
 
-  result.rows.forEach((row) => {
-    if (row.punch_time) {
-      console.log("punch_time:", row.punch_time);
-      console.log("typeof:", typeof row.punch_time);
-      console.log("instanceof Date:", row.punch_time instanceof Date);
-      console.log("toString():", row.punch_time.toString());
-      console.log("toISOString():", row.punch_time.toISOString());
-    }
-  });
+  // result.rows.forEach((row) => {
+  //   if (row.punch_time) {
+  //     console.log("punch_time:", row.punch_time);
+  //     console.log("typeof:", typeof row.punch_time);
+  //     console.log("instanceof Date:", row.punch_time instanceof Date);
+  //     console.log("toString():", row.punch_time.toString());
+  //     console.log("toISOString():", row.punch_time.toISOString());
+  //   }
+  // });
 
   const filteredRows = result.rows.map(
     ({ organisation_schema, face_descriptor, ...rest }) => {

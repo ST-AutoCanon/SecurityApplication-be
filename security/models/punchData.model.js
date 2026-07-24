@@ -1,3 +1,20 @@
+const fromVector = (vector) => {
+  if (!vector) return vector;
+
+  if (Array.isArray(vector)) {
+    return vector;
+  }
+
+  if (typeof vector === "string") {
+    return vector
+      .replace(/^\[|\]$/g, "")
+      .split(",")
+      .map((v) => Number(v.trim()));
+  }
+
+  return vector;
+};
+
 /**
  * GET TABLES THAT HAVE FACE DESCRIPTOR
  */
@@ -17,6 +34,42 @@ export const getTablesWithFaceDescriptor = async (db, schema) => {
 /**
  * GET FACES FROM TABLE
  */
+// export const getFaceDescriptorsFromTable = async (db, schema, table) => {
+//   const colRes = await db.query(
+//     `
+//     SELECT column_name
+//     FROM information_schema.columns
+//     WHERE table_schema = $1
+//       AND table_name = $2;
+//     `,
+//     [schema, table],
+//   );
+
+//   const columns = colRes.rows.map((r) => r.column_name);
+
+//   const selectFields = ["id", "face_descriptor"];
+
+//   if (columns.includes("full_name")) {
+//     selectFields.push("full_name");
+//   }
+
+//   if (columns.includes("photo")) {
+//     selectFields.push("photo");
+//   } else if (columns.includes("profile_photo")) {
+//     selectFields.push("profile_photo");
+//   }
+
+//   const query = `
+//     SELECT ${selectFields.join(", ")}
+//     FROM "${schema}"."${table}"
+//     WHERE face_descriptor IS NOT NULL;
+//   `;
+
+//   const result = await db.query(query);
+
+//   return result.rows;
+// };
+
 export const getFaceDescriptorsFromTable = async (db, schema, table) => {
   const colRes = await db.query(
     `
@@ -25,7 +78,7 @@ export const getFaceDescriptorsFromTable = async (db, schema, table) => {
     WHERE table_schema = $1
       AND table_name = $2;
     `,
-    [schema, table]
+    [schema, table],
   );
 
   const columns = colRes.rows.map((r) => r.column_name);
@@ -50,7 +103,10 @@ export const getFaceDescriptorsFromTable = async (db, schema, table) => {
 
   const result = await db.query(query);
 
-  return result.rows;
+  return result.rows.map((row) => ({
+    ...row,
+    face_descriptor: fromVector(row.face_descriptor),
+  }));
 };
 
 /**
@@ -66,8 +122,10 @@ export const getLastPunch = async (db, schema, userId) => {
     LIMIT 1;
   `;
 
+  console.time("SQL");
   const result = await db.query(query, [userId]);
 
+console.timeEnd("SQL");
   return result.rows[0] || null;
 };
 
@@ -75,7 +133,6 @@ export const getLastPunch = async (db, schema, userId) => {
  * INSERT PUNCH LOG
  */
 export const insertPunchLog = async (db, schema, data) => {
-  
   const query = `
 INSERT INTO "${schema}".punch_logs
 (
@@ -94,11 +151,82 @@ VALUES ($1,$2,$3,$4,$5)
     data.user_id,
     data.full_name,
     data.distance,
-    data.punch_type
-
+    data.punch_type,
   ];
 
   const result = await db.query(query, values);
 
   return result.rows[0];
+};
+
+
+
+// export const searchNearestFace = async (db, schema, descriptor) => {
+//   if (!Array.isArray(descriptor)) {
+//     throw new Error("Descriptor must be an array");
+//   }
+
+//   const query = `
+//     SELECT
+//       fd.table_name,
+//       fd.record_id,
+//       fd.face_descriptor <-> $1::vector AS distance
+//     FROM "${schema}".face_details fd
+//     WHERE fd.face_descriptor IS NOT NULL
+//     ORDER BY fd.face_descriptor <-> $1::vector
+//     LIMIT 1;
+//   `;
+
+//   const vector = `[${descriptor.join(",")}]`;
+
+//   const result = await db.query(query, [vector]);
+
+//   return result.rows[0] || null;
+// };
+
+
+export const searchNearestFace = async (db, schema, descriptor) => {
+  if (!Array.isArray(descriptor)) {
+    throw new Error("Descriptor must be an array");
+  }
+
+  const query = `
+    SELECT
+      fd.table_name,
+      fd.record_id,
+      fd.face_descriptor <-> $1::vector AS distance
+    FROM "${schema}".face_details fd
+    WHERE fd.face_descriptor IS NOT NULL
+    ORDER BY fd.face_descriptor <-> $1::vector
+    LIMIT 1;
+  `;
+
+  const vector = `[${descriptor.join(",")}]`;
+
+  console.log("POOL:", {
+    total: db.totalCount,
+    idle: db.idleCount,
+    waiting: db.waitingCount,
+  });
+
+  console.time("DB QUERY ONLY");
+
+  const result = await db.query(query, [vector]);
+
+  console.timeEnd("DB QUERY ONLY");
+
+  return result.rows[0] || null;
+};
+
+export const getUserByFaceRecord = async (db, schema, tableName, recordId) => {
+  const query = `
+    SELECT *
+    FROM "${schema}"."${tableName}"
+    WHERE id = $1
+    LIMIT 1;
+  `;
+
+  const result = await db.query(query, [recordId]);
+
+  return result.rows[0] || null;
 };

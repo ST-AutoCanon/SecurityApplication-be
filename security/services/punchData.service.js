@@ -57,100 +57,183 @@ export const getAllRegisteredFaces = async (organisationId) => {
 /**
  * FACE PUNCH SERVICE
  */
+
+
+// export const facePunchService = async (
+//   organisationId,
+//   inputDescriptor,
+//   photo,
+// ) => {
+//   try {
+//     const org = await getOrganisationById(masterAuthDB, organisationId);
+
+//     if (!org) {
+//       return {
+//         success: false,
+//         message: "Organisation not found",
+//       };
+//     }
+
+//     const db = getDB(org.org_type);
+//     const schema = org.schema_name;
+
+//     const FACE_MATCH_THRESHOLD = 0.6;
+
+//     // 1. Search only face_details
+//     const match = await model.searchNearestFace(db, schema, inputDescriptor);
+
+//     console.log("Face vector match:", match);
+
+//     if (!match) {
+//       return {
+//         success: false,
+//         message: "Face not recognized",
+//       };
+//     }
+
+//     const distance = Number(match.distance);
+
+//     console.log("Distance:", distance, "Threshold:", FACE_MATCH_THRESHOLD);
+
+//     if (distance > FACE_MATCH_THRESHOLD) {
+//       return {
+//         success: false,
+//         message: "Face not recognized",
+//       };
+//     }
+
+//     // 2. Get actual user details
+//     const user = await model.getUserByFaceRecord(
+//       db,
+//       schema,
+//       match.table_name,
+//       match.record_id,
+//     );
+
+//     if (!user) {
+//       return {
+//         success: false,
+//         message: "User record not found",
+//       };
+//     }
+
+//     console.log("Matched user:", user);
+
+//     // 3. Check last punch
+//     const lastPunch = await model.getLastPunch(db, schema, user.id);
+
+//     let punchType = "IN";
+
+//     if (lastPunch) {
+//       punchType = lastPunch.punch_type === "IN" ? "OUT" : "IN";
+//     }
+
+//     // 4. Insert punch
+//     await model.insertPunchLog(db, schema, {
+//       table_name: match.table_name,
+//       user_id: user.id,
+//       full_name: user.full_name,
+//       photo: photo || user.profile_photo,
+//       distance,
+//       punch_type: punchType,
+//       punch_time: new Date(),
+//     });
+
+//     return {
+//       success: true,
+//       message: `Punch ${punchType} successful`,
+//       data: {
+//         id: user.id,
+//         full_name: user.full_name,
+//         punch_type: punchType,
+//         distance,
+//       },
+//     };
+//   } catch (err) {
+//     console.error("Face Punch Error:", err);
+
+//     return {
+//       success: false,
+//       message: err.message,
+//     };
+//   }
+// };
+
+
 export const facePunchService = async (
   organisationId,
   inputDescriptor,
   photo,
 ) => {
-  try {
-    // Get organisation
-    const org = await getOrganisationById(masterAuthDB, organisationId);
+  console.time("TOTAL FACE PUNCH TIME");
 
-    if (!org) {
-      return {
-        success: false,
-        message: "Organisation not found",
-      };
-    }
+  try {
+    console.time("GET ORGANISATION");
+    const org = await getOrganisationById(masterAuthDB, organisationId);
+    console.timeEnd("GET ORGANISATION");
 
     const db = getDB(org.org_type);
     const schema = org.schema_name;
 
-    // Get all tables containing face descriptors
-    const tables = await model.getTablesWithFaceDescriptor(db, schema);
+    console.time("VECTOR SEARCH");
 
-    let bestMatch = null;
-    let lowestDistance = 0.6;
+    const match = await model.searchNearestFace(db, schema, inputDescriptor);
 
-    // Compare descriptor against every registered face
-    for (const table of tables) {
-      const records = await model.getFaceDescriptorsFromTable(
-        db,
-        schema,
-        table,
-      );
+    console.timeEnd("VECTOR SEARCH");
 
-      for (const user of records) {
-        if (!user.face_descriptor) continue;
+    console.log("Face vector match:", match);
 
-        const distance = euclideanDistance(
-          inputDescriptor,
-          user.face_descriptor,
-        );
+    if (!match) {
+      console.timeEnd("TOTAL FACE PUNCH TIME");
 
-        if (distance < lowestDistance) {
-          lowestDistance = distance;
-
-          bestMatch = {
-            table,
-            id: user.id,
-            full_name: user.full_name || null,
-            profile_photo: user.profile_photo || user.photo || null,
-            distance,
-          };
-        }
-      }
-    }
-
-    // No face matched
-    if (!bestMatch) {
       return {
         success: false,
         message: "Face not recognized",
       };
     }
 
-    // Determine punch type (IN / OUT)
-    const lastPunch = await model.getLastPunch(db, schema, bestMatch.id);
+    const distance = Number(match.distance);
 
-    let punchType = "IN";
+    console.time("GET USER DETAILS");
 
-    if (lastPunch) {
-      punchType = lastPunch.punch_type === "IN" ? "OUT" : "IN";
-    }
+    const user = await model.getUserByFaceRecord(
+      db,
+      schema,
+      match.table_name,
+      match.record_id,
+    );
 
-    console.log("Matched table:", bestMatch.table);
-    console.log("Matched user:", bestMatch.id);
-    // Save punch
+    console.timeEnd("GET USER DETAILS");
+
+    console.time("INSERT PUNCH");
+
     await model.insertPunchLog(db, schema, {
-      table_name: bestMatch.table,
-      user_id: bestMatch.id,
-      full_name: bestMatch.full_name,
-      photo: photo || bestMatch.profile_photo,
-      distance: bestMatch.distance,
-      punch_type: punchType,
+      table_name: match.table_name,
+      user_id: user.id,
+      full_name: user.full_name,
+      photo: photo || user.profile_photo,
+      distance,
+      punch_type: "IN",
       punch_time: new Date(),
     });
 
+    console.timeEnd("INSERT PUNCH");
+
+    console.timeEnd("TOTAL FACE PUNCH TIME");
+
     return {
       success: true,
-      message: `Punch ${punchType} successful`,
       data: {
-        ...bestMatch,
-        punch_type: punchType,
+        id: user.id,
+        full_name: user.full_name,
+        distance,
       },
     };
   } catch (err) {
+    console.timeEnd("TOTAL FACE PUNCH TIME");
+
+    console.error(err);
+
     return {
       success: false,
       message: err.message,
@@ -162,10 +245,18 @@ export const facePunchService = async (
  * EUCLIDEAN DISTANCE
  */
 const euclideanDistance = (a, b) => {
+  if (!Array.isArray(a) || !Array.isArray(b)) {
+    return Infinity;
+  }
+
+  if (a.length !== b.length) {
+    return Infinity;
+  }
+
   let sum = 0;
 
   for (let i = 0; i < a.length; i++) {
-    sum += Math.pow(a[i] - b[i], 2);
+    sum += (a[i] - b[i]) ** 2;
   }
 
   return Math.sqrt(sum);
