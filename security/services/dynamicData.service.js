@@ -5,32 +5,116 @@ import { getOrganisationById } from "../../auth/models/organisation.model.js";
 import { getTemplateFields, getTemplate } from "../models/dynamicData.model.js";
 import { validatePayload } from "../../utils/dynamicField.validator.js";
 
+// export const createRecordService = async (
+//   organisationId,
+//   templateId,
+//   table,
+//   payload,
+// ) => {
+//   try {
+//     // STEP 1: Get organisation
+//     const org = await getOrganisationById(masterAuthDB, organisationId);
+
+//     if (!org) {
+//       return {
+//         success: false,
+//         message: "Organisation not found",
+//       };
+//     }
+
+//     const schema = org.schema_name;
+
+//     // STEP 2: Get Business DB
+//     const db = getDB(org.org_type);
+
+//     // STEP 3: Verify template
+//     // const template = await getTemplate(masterAuthDB, templateId);
+// const template = await getTemplate(masterAuthDB, organisationId, templateId);
+
+
+//     if (!template) {
+//       return {
+//         success: false,
+//         message: "Template not found",
+//       };
+//     }
+
+//     if (template.table_name !== table) {
+//       return {
+//         success: false,
+//         message: "Invalid table for this template",
+//       };
+//     }
+
+//     // STEP 4: Get template fields
+// const allowedFields = await getTemplateFields(
+//   masterAuthDB,
+//   organisationId,
+//   templateId,
+// );
+
+// console.log("Template ID:", templateId);
+// console.log("Allowed Fields:", allowedFields);
+//     console.log("Payload:", payload);
+    
+//     // STEP 5: Validate payload
+//     const validation = validatePayload(allowedFields, payload);
+
+//     if (!validation.valid) {
+//       return {
+//         success: false,
+//         message: validation.message,
+//       };
+//     }
+
+//     // STEP 6: Insert record using cleaned payload
+//     const result = await model.insertDynamicRecord(
+//       db,
+//       schema,
+//       table,
+//       validation.data,
+//     );
+
+//     return {
+//       success: true,
+//       data: result,
+//     };
+//   } catch (err) {
+//     console.error("Create Record Error:", err);
+
+//     return {
+//       success: false,
+//       message: err.message,
+//     };
+//   }
+// };
+
+
 export const createRecordService = async (
   organisationId,
   templateId,
   table,
   payload,
 ) => {
+  const org = await getOrganisationById(masterAuthDB, organisationId);
+
+  if (!org) {
+    return {
+      success: false,
+      message: "Organisation not found",
+    };
+  }
+
+  const schema = org.schema_name;
+  const db = getDB(org.org_type);
+
   try {
-    // STEP 1: Get organisation
-    const org = await getOrganisationById(masterAuthDB, organisationId);
-
-    if (!org) {
-      return {
-        success: false,
-        message: "Organisation not found",
-      };
-    }
-
-    const schema = org.schema_name;
-
-    // STEP 2: Get Business DB
-    const db = getDB(org.org_type);
-
-    // STEP 3: Verify template
-    // const template = await getTemplate(masterAuthDB, templateId);
-const template = await getTemplate(masterAuthDB, organisationId, templateId); 
-
+    // STEP 1: Verify template
+    const template = await getTemplate(
+      masterAuthDB,
+      organisationId,
+      templateId,
+    );
 
     if (!template) {
       return {
@@ -46,18 +130,20 @@ const template = await getTemplate(masterAuthDB, organisationId, templateId);
       };
     }
 
-    // STEP 4: Get template fields
-const allowedFields = await getTemplateFields(
-  masterAuthDB,
-  organisationId,
-  templateId,
-);
+    // STEP 2: Get template fields
+    const allowedFields = await getTemplateFields(
+      masterAuthDB,
+      organisationId,
+      templateId,
+    );
 
-console.log("Template ID:", templateId);
-console.log("Allowed Fields:", allowedFields);
     console.log("Payload:", payload);
-    
-    // STEP 5: Validate payload
+    console.log(
+      "Allowed Fields:",
+      allowedFields.map((f) => f.field_key),
+    );
+
+    // STEP 3: Validate payload
     const validation = validatePayload(allowedFields, payload);
 
     if (!validation.valid) {
@@ -67,7 +153,10 @@ console.log("Allowed Fields:", allowedFields);
       };
     }
 
-    // STEP 6: Insert record using cleaned payload
+    // STEP 4: Begin Transaction
+    await db.query("BEGIN");
+
+    // STEP 5: Insert into Dynamic Table
     const result = await model.insertDynamicRecord(
       db,
       schema,
@@ -75,11 +164,30 @@ console.log("Allowed Fields:", allowedFields);
       validation.data,
     );
 
+    // STEP 6: Insert into Face Details
+    // if (result.face_descriptor) {
+if (result.face_descriptor) {
+  await model.insertFaceDetails(
+    db,
+    schema,
+    table,
+    result.id,
+    result.face_descriptor,
+  );
+}
+    // STEP 7: Commit
+    await db.query("COMMIT");
+
     return {
       success: true,
       data: result,
     };
   } catch (err) {
+    // Rollback if transaction started
+    try {
+      await db.query("ROLLBACK");
+    } catch (_) {}
+
     console.error("Create Record Error:", err);
 
     return {
@@ -154,27 +262,84 @@ export const getRecordByIdService = async (organisationId, table, id) => {
   }
 };
 
+// export const updateRecordService = async (
+//   organisationId,
+//   table,
+//   id,
+//   payload,
+// ) => {
+//   try {
+//     // STEP 1: Get organisation
+//     const org = await getOrganisationById(masterAuthDB, organisationId);
+
+//     if (!org) {
+//       return {
+//         success: false,
+//         message: "Organisation not found",
+//       };
+//     }
+
+//     // STEP 2: Get Business DB
+//     const db = getDB(org.org_type);
+
+//     // STEP 3: Check record exists
+//     const existingRecord = await model.getRecordById(
+//       db,
+//       org.schema_name,
+//       table,
+//       id,
+//     );
+
+//     if (!existingRecord) {
+//       return {
+//         success: false,
+//         message: "Record not found",
+//       };
+//     }
+
+//     // STEP 4: Update record
+//     const updatedRecord = await model.updateDynamicRecord(
+//       db,
+//       org.schema_name,
+//       table,
+//       id,
+//       payload,
+//     );
+
+//     return {
+//       success: true,
+//       data: updatedRecord,
+//     };
+//   } catch (err) {
+//     console.error("Update Record Error:", err);
+
+//     return {
+//       success: false,
+//       message: err.message,
+//     };
+//   }
+// };
+
+
 export const updateRecordService = async (
   organisationId,
   table,
   id,
   payload,
 ) => {
+  const org = await getOrganisationById(masterAuthDB, organisationId);
+
+  if (!org) {
+    return {
+      success: false,
+      message: "Organisation not found",
+    };
+  }
+
+  const db = getDB(org.org_type);
+
   try {
-    // STEP 1: Get organisation
-    const org = await getOrganisationById(masterAuthDB, organisationId);
-
-    if (!org) {
-      return {
-        success: false,
-        message: "Organisation not found",
-      };
-    }
-
-    // STEP 2: Get Business DB
-    const db = getDB(org.org_type);
-
-    // STEP 3: Check record exists
+    // STEP 1: Check record exists
     const existingRecord = await model.getRecordById(
       db,
       org.schema_name,
@@ -189,7 +354,10 @@ export const updateRecordService = async (
       };
     }
 
-    // STEP 4: Update record
+    // STEP 2: Begin Transaction
+    await db.query("BEGIN");
+
+    // STEP 3: Update Dynamic Table
     const updatedRecord = await model.updateDynamicRecord(
       db,
       org.schema_name,
@@ -198,11 +366,29 @@ export const updateRecordService = async (
       payload,
     );
 
+    // STEP 4: Update Face Details (only if face changed)
+if (payload.face_descriptor) {
+  await model.updateFaceDetails(
+    db,
+    org.schema_name,
+    table,
+    id,
+    payload.face_descriptor,
+  );
+}
+
+    // STEP 5: Commit
+    await db.query("COMMIT");
+
     return {
       success: true,
       data: updatedRecord,
     };
   } catch (err) {
+    try {
+      await db.query("ROLLBACK");
+    } catch (_) {}
+
     console.error("Update Record Error:", err);
 
     return {
@@ -212,44 +398,101 @@ export const updateRecordService = async (
   }
 };
 
+// export const deleteRecordService = async (organisationId, table, id) => {
+//   try {
+//     const org = await getOrganisationById(masterAuthDB, organisationId);
+
+//     if (!org) {
+//       return {
+//         success: false,
+//         message: "Organisation not found",
+//       };
+//     }
+
+//     const db = getDB(org.org_type);
+
+//     const data = await model.deleteDynamicRecord(
+//       db,
+//       org.schema_name,
+//       table,
+//       id,
+//     );
+//     if (!data) {
+//       return {
+//         success: false,
+//         message: "Record not found",
+//       };
+//     }
+
+//     return {
+//       success: true,
+//       data,
+//     };
+//   } catch (err) {
+//     return {
+//       success: false,
+//       message: err.message,
+//     };
+//   }
+// };
+
+
 export const deleteRecordService = async (organisationId, table, id) => {
+  const org = await getOrganisationById(masterAuthDB, organisationId);
+
+  if (!org) {
+    return {
+      success: false,
+      message: "Organisation not found",
+    };
+  }
+
+  const db = getDB(org.org_type);
+
   try {
-    const org = await getOrganisationById(masterAuthDB, organisationId);
+    // STEP 1: Begin Transaction
+    await db.query("BEGIN");
 
-    if (!org) {
-      return {
-        success: false,
-        message: "Organisation not found",
-      };
-    }
-
-    const db = getDB(org.org_type);
-
-    const data = await model.deleteDynamicRecord(
+    // STEP 2: Delete from Dynamic Table
+    const deletedRecord = await model.deleteDynamicRecord(
       db,
       org.schema_name,
       table,
       id,
     );
-    if (!data) {
+
+    if (!deletedRecord) {
+      await db.query("ROLLBACK");
+
       return {
         success: false,
         message: "Record not found",
       };
     }
 
+    // STEP 3: Delete from Face Details
+    await model.deleteFaceDetails(db, org.schema_name, table, id);
+
+    // STEP 4: Commit
+    await db.query("COMMIT");
+
     return {
       success: true,
-      data,
+      data: deletedRecord,
     };
   } catch (err) {
+    try {
+      await db.query("ROLLBACK");
+    } catch (_) {}
+
+    console.error("Delete Record Error:", err);
+
     return {
       success: false,
       message: err.message,
     };
   }
 };
-
 export const getTemplateMetadataService = async (
   organisationId,
   templateId,

@@ -8,6 +8,10 @@ const normalizeSqlType = (type) => {
     return t;
   }
 
+    if (/^VECTOR\(\d+\)$/.test(t)) {
+      return t;
+    }
+
   // CHARACTER VARYING(n)
   if (/^CHARACTER VARYING\(\d+\)$/.test(t)) {
     return t.replace("CHARACTER VARYING", "VARCHAR");
@@ -57,6 +61,9 @@ const normalizeSqlType = (type) => {
 
     case "DOUBLE PRECISION[]":
       return "DOUBLE PRECISION[]";
+
+    case "VECTOR":
+      return "VECTOR(128)";
 
     case "JSON":
     case "JSONB":

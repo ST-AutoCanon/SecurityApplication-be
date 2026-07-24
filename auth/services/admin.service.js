@@ -108,11 +108,11 @@ export const fetchAllBusinessData = async (
   authClient,
   organisationId,
 ) => {
-  console.log("👉 organisationId:", organisationId);
+  // console.log("👉 organisationId:", organisationId);
 
   const org = await model.getOrganisationSchema(authClient, organisationId);
 
-  console.log("👉 org result:", org);
+  // console.log("👉 org result:", org);
 
   if (!org) {
     throw new Error("Organisation not found");
@@ -120,16 +120,16 @@ export const fetchAllBusinessData = async (
 
   const schemaName = org.schema_name;
 
-  console.log("👉 schemaName:", schemaName);
+  // console.log("👉 schemaName:", schemaName);
 
   const tables = await model.getTables(businessClient, schemaName);
 
-  console.log("👉 tables:", tables);
+  // console.log("👉 tables:", tables);
 
   const output = {};
 
   for (const { table_name } of tables) {
-    console.log("👉 table_name:", table_name);
+    // console.log("👉 table_name:", table_name);
 
     try {
       const rows = await model.getTableData(
@@ -138,7 +138,7 @@ export const fetchAllBusinessData = async (
         table_name,
       );
 
-      console.log("👉 rows count:", rows.length);
+      // console.log("👉 rows count:", rows.length);
 
       output[table_name] = {
         columns: rows.length ? Object.keys(rows[0]) : [],
@@ -149,7 +149,7 @@ export const fetchAllBusinessData = async (
     }
   }
 
-  console.log("👉 FINAL OUTPUT:", output);
+  // console.log("👉 FINAL OUTPUT:", output);
 
   return output;
 };

@@ -17,8 +17,19 @@ export const createRecord = async (req, res) => {
     ...req.body,
   };
 
+  // if (payload.face_descriptor) {
+  //   payload.face_descriptor = JSON.parse(payload.face_descriptor);
+  // }
+
   if (payload.face_descriptor) {
-    payload.face_descriptor = JSON.parse(payload.face_descriptor);
+    try {
+      payload.face_descriptor = JSON.parse(payload.face_descriptor);
+    } catch {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid face_descriptor format.",
+      });
+    }
   }
   
   // Save uploaded image path

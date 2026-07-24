@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config(); // must be first
 
 import pg from "pg";
+// import pgvector from "pgvector/pg";
 const { Pool } = pg;
 
 const secondDB = new Pool({
@@ -11,6 +12,10 @@ const secondDB = new Pool({
   database: process.env.DB2_NAME,
   port: Number(process.env.DB2_PORT),
 });
+
+
+// Register pgvector type support
+// await pgvector.registerType(secondDB);
 
 secondDB
   .connect()
