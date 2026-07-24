@@ -18,7 +18,7 @@ export const createSystemTables = async (db, schema) => {
       id BIGSERIAL PRIMARY KEY,
       table_name TEXT NOT NULL,
       record_id BIGINT NOT NULL,
-      face_descriptor VECTOR(128) NOT NULL,
+      face_descriptor VECTOR(512) NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW(),
 
@@ -26,4 +26,11 @@ export const createSystemTables = async (db, schema) => {
       UNIQUE (table_name, record_id)
     );
   `);
-};;
+
+  // HNSW Index
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS face_details_face_descriptor_hnsw_idx
+    ON "${schema}".face_details
+    USING hnsw (face_descriptor vector_cosine_ops);
+  `);
+};
