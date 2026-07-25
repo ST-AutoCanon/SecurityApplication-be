@@ -63,7 +63,7 @@ const normalizeSqlType = (type) => {
       return "DOUBLE PRECISION[]";
 
     case "VECTOR":
-      return "VECTOR(128)";
+        return "VECTOR(512)";
 
     case "JSON":
     case "JSONB":

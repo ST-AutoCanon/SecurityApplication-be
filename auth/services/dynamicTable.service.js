@@ -149,6 +149,22 @@ export const createDynamicTableService = async (payload) => {
     const businessDB = getDB(organisation.org_type);
 
     await businessDB.query(sql);
+const hasFaceDescriptor = selectedFields.some(
+  (field) => field.field_key === "face_descriptor",
+);
+
+if (hasFaceDescriptor) {
+  const indexQuery = format(
+    `CREATE INDEX IF NOT EXISTS %I
+     ON %I.%I
+     USING hnsw (face_descriptor vector_cosine_ops)`,
+    `${payload.tableName}_face_descriptor_hnsw_idx`,
+    organisation.schema_name,
+    payload.tableName,
+  );
+
+  await businessDB.query(indexQuery);
+}
 
     const dynamicTable = await model.createDynamicTable(client, {
       organisationId: organisation.id,
@@ -338,6 +354,7 @@ export const updateDynamicTableService = async (payload) => {
       "numeric",
       "double precision",
       "double precision[]",
+      "vector(512)",
     ]);
 
     const addedFields = [];
@@ -375,6 +392,21 @@ export const updateDynamicTableService = async (payload) => {
       await businessDB.query(alterQuery);
 
       addedFields.push(field.field_key);
+    }
+
+    // 8.5 CREATE HNSW INDEX (if face_descriptor added)
+    // -------------------------------------------------
+    if (toAdd.includes("face_descriptor")) {
+      const indexQuery = format(
+        `CREATE INDEX IF NOT EXISTS %I
+     ON %I.%I
+     USING hnsw (face_descriptor vector_cosine_ops)`,
+        `${payload.tableName}_face_descriptor_hnsw_idx`,
+        organisation.schema_name,
+        payload.tableName,
+      );
+
+      await businessDB.query(indexQuery);
     }
 
     // -------------------------------------------------

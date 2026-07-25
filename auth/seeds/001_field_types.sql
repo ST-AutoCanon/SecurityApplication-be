@@ -11,5 +11,5 @@ VALUES
 ('datetime','Date Time','TIMESTAMP','Date and Time'),
 ('image','Image','TEXT','Image Path'),
 ('file','File','TEXT','File Path'),
-('descriptor','Face Descriptor','DOUBLE PRECISION[]','Face Embedding'),
+('descriptor','Face Descriptor','VECTOR(512)','Face Embedding'),
 ('enum','Dropdown','TEXT','Dropdown');
