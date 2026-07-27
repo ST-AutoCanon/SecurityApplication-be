@@ -69,7 +69,7 @@ export const createOrganisation = async (
       photo_path,
       registration_start_date,
       registration_end_date,
-      status,
+      status?.trim().toUpperCase(),
     ],
   );
 
@@ -399,7 +399,7 @@ export const updateOrganisation = async (
       photo_path,
       registration_start_date,
       registration_end_date,
-      status,
+      status?.trim().toUpperCase(),
       id,
     ],
   );

@@ -23,6 +23,8 @@
     "nodemailer": "^9.0.1",
     "pg": "^8.21.0",
     "pg-format": "^1.0.4",
-    "pgvector": "^0.3.0"
+    "pgvector": "^0.3.0",
+    "xlsx": "^0.18.5",
+    "xlsx-js-style": "^1.2.0"
   }
 }

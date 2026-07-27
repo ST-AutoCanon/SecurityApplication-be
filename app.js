@@ -17,6 +17,7 @@ import punchdata from "./security/routes/punchData.routes.js";
 
 
 import adminRoutes from "./auth/routes/admin.routes.js";
+import apartmentRoutes from "./apartment/routes/apartmentMember.routes.js";
 import dynamicTableRoutes from "./auth/routes/dynamicTable.routes.js";
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(
     origin: [
       "http://localhost:3000",
       "http://localhost:5173",
+      "http://localhost:5174",
       // add production frontend URL here
       // "https://yourdomain.com",
     ],
@@ -87,6 +89,8 @@ app.use("/punch-data", punchdata);
 
 
 app.use("/api/admin", adminRoutes);
+
+app.use("/api/admin/apartment", apartmentRoutes);
 // =========================
 // 404 Handler
 // =========================
