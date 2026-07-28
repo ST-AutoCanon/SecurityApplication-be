@@ -328,3 +328,4 @@ export const activateSecurityUser = async (client, organisationId, userId) => {
 
   return result.rows[0];
 };
+
