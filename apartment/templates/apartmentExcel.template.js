@@ -33,7 +33,6 @@ export const membersTemplate = [
 
     email: "john@test.com",
 
-    profile_photo: "",
 
     aadhaar_number: "123456789012",
 
@@ -282,8 +281,6 @@ export const applyExcelStyle = (sheet) => {
     { wch: 25 }, // alternate mobile
 
     { wch: 35 }, // email
-
-    { wch: 25 }, // profile photo
 
     { wch: 22 }, // aadhaar
 

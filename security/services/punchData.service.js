@@ -64,45 +64,72 @@ export const getAllRegisteredFaces = async (organisationId) => {
 //   inputDescriptor,
 //   photo,
 // ) => {
+//   console.time("TOTAL FACE PUNCH TIME");
+
 //   try {
+//     console.time("GET ORGANISATION");
+
 //     const org = await getOrganisationById(masterAuthDB, organisationId);
 
+//     console.timeEnd("GET ORGANISATION");
+
 //     if (!org) {
+//       console.timeEnd("TOTAL FACE PUNCH TIME");
+
 //       return {
 //         success: false,
-//         message: "Organisation not found",
+//         code: "ORGANISATION_NOT_FOUND",
+//         message: "Organisation not found.",
 //       };
 //     }
 
 //     const db = getDB(org.org_type);
 //     const schema = org.schema_name;
 
-//     const FACE_MATCH_THRESHOLD = 0.6;
+//     console.time("VECTOR SEARCH");
 
-//     // 1. Search only face_details
 //     const match = await model.searchNearestFace(db, schema, inputDescriptor);
+
+//     console.timeEnd("VECTOR SEARCH");
 
 //     console.log("Face vector match:", match);
 
 //     if (!match) {
+//       console.timeEnd("TOTAL FACE PUNCH TIME");
+
 //       return {
 //         success: false,
-//         message: "Face not recognized",
+//         code: "FACE_NOT_FOUND",
+//         message: "No registered face found. Please try again.",
 //       };
 //     }
 
 //     const distance = Number(match.distance);
 
-//     console.log("Distance:", distance, "Threshold:", FACE_MATCH_THRESHOLD);
+//     const FACE_MATCH_THRESHOLD = 0.6;
 
+//     console.log("Threshold:", FACE_MATCH_THRESHOLD);
+//     console.log("Distance:", distance);
+
+//     /**
+//      * FACE CONFIDENCE CHECK
+//      */
 //     if (distance > FACE_MATCH_THRESHOLD) {
+//       console.log("Face rejected - distance too high");
+
+//       console.timeEnd("TOTAL FACE PUNCH TIME");
+
 //       return {
 //         success: false,
-//         message: "Face not recognized",
+//         code: "LOW_CONFIDENCE_MATCH",
+//         message:
+//           "Face verification failed. Please move closer to the camera and try again.",
+//         distance,
 //       };
 //     }
 
-//     // 2. Get actual user details
+//     console.time("GET USER DETAILS");
+
 //     const user = await model.getUserByFaceRecord(
 //       db,
 //       schema,
@@ -110,25 +137,36 @@ export const getAllRegisteredFaces = async (organisationId) => {
 //       match.record_id,
 //     );
 
+//     console.timeEnd("GET USER DETAILS");
+
 //     if (!user) {
+//       console.timeEnd("TOTAL FACE PUNCH TIME");
+
 //       return {
 //         success: false,
-//         message: "User record not found",
+//         code: "USER_NOT_FOUND",
+//         message: "Face matched but user record was not found.",
 //       };
 //     }
 
-//     console.log("Matched user:", user);
+//     console.time("GET LAST PUNCH");
 
-//     // 3. Check last punch
 //     const lastPunch = await model.getLastPunch(db, schema, user.id);
+
+//     console.timeEnd("GET LAST PUNCH");
+
+//     console.log("Last Punch:", lastPunch);
 
 //     let punchType = "IN";
 
-//     if (lastPunch) {
-//       punchType = lastPunch.punch_type === "IN" ? "OUT" : "IN";
+//     if (lastPunch && lastPunch.punch_type === "IN") {
+//       punchType = "OUT";
 //     }
 
-//     // 4. Insert punch
+//     console.log("Current Punch Type:", punchType);
+
+//     console.time("INSERT PUNCH");
+
 //     await model.insertPunchLog(db, schema, {
 //       table_name: match.table_name,
 //       user_id: user.id,
@@ -139,38 +177,62 @@ export const getAllRegisteredFaces = async (organisationId) => {
 //       punch_time: new Date(),
 //     });
 
+//     console.timeEnd("INSERT PUNCH");
+
+//     console.timeEnd("TOTAL FACE PUNCH TIME");
+
 //     return {
 //       success: true,
+//       code: "PUNCH_SUCCESS",
 //       message: `Punch ${punchType} successful`,
 //       data: {
 //         id: user.id,
 //         full_name: user.full_name,
-//         punch_type: punchType,
+//         module_name: match.table_name,
 //         distance,
+//         punch_type: punchType,
 //       },
 //     };
 //   } catch (err) {
+//     console.timeEnd("TOTAL FACE PUNCH TIME");
+
 //     console.error("Face Punch Error:", err);
 
 //     return {
 //       success: false,
-//       message: err.message,
+//       code: "SERVER_ERROR",
+//       message: err.message || "Face punch failed.",
 //     };
 //   }
 // };
 
 
-export const facePunchService = async (
+/**
+ * VERIFY FACE SERVICE
+ */
+export const verifyFaceService = async (
   organisationId,
   inputDescriptor,
   photo,
 ) => {
-  console.time("TOTAL FACE PUNCH TIME");
+  console.time("TOTAL FACE VERIFY TIME");
 
   try {
     console.time("GET ORGANISATION");
+
     const org = await getOrganisationById(masterAuthDB, organisationId);
+
     console.timeEnd("GET ORGANISATION");
+
+    if (!org) {
+      console.timeEnd("TOTAL FACE VERIFY TIME");
+
+      return {
+        success: false,
+        code: "ORGANISATION_NOT_FOUND",
+        message: "Organisation not found.",
+      };
+    }
 
     const db = getDB(org.org_type);
     const schema = org.schema_name;
@@ -184,15 +246,35 @@ export const facePunchService = async (
     console.log("Face vector match:", match);
 
     if (!match) {
-      console.timeEnd("TOTAL FACE PUNCH TIME");
+      console.timeEnd("TOTAL FACE VERIFY TIME");
 
       return {
         success: false,
-        message: "Face not recognized",
+        code: "FACE_NOT_FOUND",
+        message: "No registered face found. Please try again.",
       };
     }
 
     const distance = Number(match.distance);
+
+    const FACE_MATCH_THRESHOLD = 0.6;
+
+    console.log("Threshold:", FACE_MATCH_THRESHOLD);
+    console.log("Distance:", distance);
+
+    if (distance > FACE_MATCH_THRESHOLD) {
+      console.log("Face rejected - distance too high");
+
+      console.timeEnd("TOTAL FACE VERIFY TIME");
+
+      return {
+        success: false,
+        code: "LOW_CONFIDENCE_MATCH",
+        message:
+          "Face verification failed. Please move closer to the camera and try again.",
+        distance,
+      };
+    }
 
     console.time("GET USER DETAILS");
 
@@ -205,38 +287,230 @@ export const facePunchService = async (
 
     console.timeEnd("GET USER DETAILS");
 
-    console.time("INSERT PUNCH");
+    if (!user) {
+      console.timeEnd("TOTAL FACE VERIFY TIME");
 
-    await model.insertPunchLog(db, schema, {
-      table_name: match.table_name,
-      user_id: user.id,
-      full_name: user.full_name,
-      photo: photo || user.profile_photo,
-      distance,
-      punch_type: "IN",
-      punch_time: new Date(),
-    });
+      return {
+        success: false,
+        code: "USER_NOT_FOUND",
+        message: "Face matched but user record was not found.",
+      };
+    }
 
-    console.timeEnd("INSERT PUNCH");
+    console.time("GET LAST PUNCH");
 
-    console.timeEnd("TOTAL FACE PUNCH TIME");
+    const lastPunch = await model.getLastPunch(db, schema, user.id);
+
+    console.timeEnd("GET LAST PUNCH");
+
+    let punchType = "IN";
+
+    if (lastPunch && lastPunch.punch_type === "IN") {
+      punchType = "OUT";
+    }
+
+    console.timeEnd("TOTAL FACE VERIFY TIME");
 
     return {
       success: true,
+      code: "FACE_VERIFIED",
+      message: "Face verified successfully.",
       data: {
         id: user.id,
         full_name: user.full_name,
+        module_name: match.table_name,
         distance,
+        punch_type: punchType,
+        photo: photo || user.profile_photo,
       },
     };
   } catch (err) {
-    console.timeEnd("TOTAL FACE PUNCH TIME");
+    console.timeEnd("TOTAL FACE VERIFY TIME");
 
-    console.error(err);
+    console.error("Face Verify Error:", err);
 
     return {
       success: false,
-      message: err.message,
+      code: "SERVER_ERROR",
+      message: err.message || "Face verification failed.",
+    };
+  }
+};
+
+
+/**
+ * CONFIRM PUNCH SERVICE
+ */
+// export const confirmPunchService = async (
+//   organisationId,
+//   userId,
+//   moduleName,
+//   photo,
+// ) => {
+//   console.time("TOTAL CONFIRM PUNCH TIME");
+
+//   try {
+//     const org = await getOrganisationById(masterAuthDB, organisationId);
+
+//     if (!org) {
+//       console.timeEnd("TOTAL CONFIRM PUNCH TIME");
+
+//       return {
+//         success: false,
+//         code: "ORGANISATION_NOT_FOUND",
+//         message: "Organisation not found.",
+//       };
+//     }
+
+//     const db = getDB(org.org_type);
+//     const schema = org.schema_name;
+
+//     const user = await model.getUserById(
+//       db,
+//       schema,
+//       moduleName,
+//       userId,
+//     );
+
+//     if (!user) {
+//       console.timeEnd("TOTAL CONFIRM PUNCH TIME");
+
+//       return {
+//         success: false,
+//         code: "USER_NOT_FOUND",
+//         message: "User not found.",
+//       };
+//     }
+
+//     // Check latest punch again
+//     const lastPunch = await model.getLastPunch(
+//       db,
+//       schema,
+//       user.id,
+//     );
+
+//     let punchType = "IN";
+
+//     if (lastPunch?.punch_type === "IN") {
+//       punchType = "OUT";
+//     }
+
+//     await model.insertPunchLog(db, schema, {
+//       table_name: moduleName,
+//       user_id: user.id,
+//       full_name: user.full_name,
+//       photo: photo || user.profile_photo,
+//       distance: 0,
+//       punch_type: punchType,
+//       punch_time: new Date(),
+//     });
+
+//     console.timeEnd("TOTAL CONFIRM PUNCH TIME");
+
+//     return {
+//       success: true,
+//       code: "PUNCH_SUCCESS",
+//       message: `Punch ${punchType} successful.`,
+//       data: {
+//         id: user.id,
+//         full_name: user.full_name,
+//         module_name: moduleName,
+//         punch_type: punchType,
+//       },
+//     };
+//   } catch (err) {
+//     console.timeEnd("TOTAL CONFIRM PUNCH TIME");
+
+//     console.error(err);
+
+//     return {
+//       success: false,
+//       code: "SERVER_ERROR",
+//       message: err.message || "Punch failed.",
+//     };
+//   }
+// };
+
+
+
+export const confirmPunchService = async (
+  organisationId,
+  userId,
+  moduleName,
+  data,
+) => {
+  console.time("TOTAL CONFIRM PUNCH TIME");
+
+  try {
+    const org = await getOrganisationById(masterAuthDB, organisationId);
+
+    if (!org) {
+      console.timeEnd("TOTAL CONFIRM PUNCH TIME");
+
+      return {
+        success: false,
+        code: "ORGANISATION_NOT_FOUND",
+        message: "Organisation not found.",
+      };
+    }
+
+    const db = getDB(org.org_type);
+    const schema = org.schema_name;
+
+    const user = await model.getUserById(db, schema, moduleName, userId);
+
+    if (!user) {
+      console.timeEnd("TOTAL CONFIRM PUNCH TIME");
+
+      return {
+        success: false,
+        code: "USER_NOT_FOUND",
+        message: "User not found.",
+      };
+    }
+
+    // Check latest punch
+    const lastPunch = await model.getLastPunch(db, schema, user.id);
+
+    let punchType = "IN";
+
+    if (lastPunch?.punch_type === "IN") {
+      punchType = "OUT";
+    }
+
+    await model.insertPunchLog(db, schema, {
+      table_name: moduleName,
+      user_id: user.id,
+      full_name: data.full_name || user.full_name,
+      photo: data.photo || user.profile_photo,
+      distance: data.distance ?? 0,
+      punch_type: punchType,
+      punch_time: new Date(),
+    });
+
+    console.timeEnd("TOTAL CONFIRM PUNCH TIME");
+
+    return {
+      success: true,
+      code: "PUNCH_SUCCESS",
+      message: `Punch ${punchType} successful.`,
+      data: {
+        id: user.id,
+        full_name: user.full_name,
+        module_name: moduleName,
+        distance: data.distance ?? 0,
+        punch_type: punchType,
+      },
+    };
+  } catch (err) {
+    console.timeEnd("TOTAL CONFIRM PUNCH TIME");
+
+    console.error("Confirm Punch Error:", err);
+
+    return {
+      success: false,
+      code: "SERVER_ERROR",
+      message: err.message || "Punch failed.",
     };
   }
 };

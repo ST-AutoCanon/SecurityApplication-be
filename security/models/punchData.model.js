@@ -230,3 +230,19 @@ export const getUserByFaceRecord = async (db, schema, tableName, recordId) => {
 
   return result.rows[0] || null;
 };
+
+/**
+ * GET USER BY TABLE & ID
+ */
+export const getUserById = async (db, schema, tableName, userId) => {
+  const query = `
+    SELECT *
+    FROM "${schema}"."${tableName}"
+    WHERE id = $1
+    LIMIT 1;
+  `;
+
+  const result = await db.query(query, [userId]);
+
+  return result.rows[0] || null;
+};
