@@ -23,6 +23,10 @@ coverage
 dist
 build
 
+# Uploads
+security/uploads/
+uploads/excel/
+
 # OS files
 .DS_Store
 Thumbs.db

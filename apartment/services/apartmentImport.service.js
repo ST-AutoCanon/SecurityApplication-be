@@ -101,8 +101,6 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
 
         email: row.email,
 
-        profile_photo: row.profile_photo || null,
-
         aadhaar_number: row.aadhaar_number,
 
         occupation: row.occupation,
