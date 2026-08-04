@@ -7,6 +7,7 @@ import orgSuperAdminRoutes from "./auth/routes/organisationSuperAdmin.routes.js"
 
 import authRoutes from "./auth/routes/auth.routes.js";
 import orgroutes from "./auth/routes/organisation.routes.js"
+import formsRoutes from "./security/routes/forms.routes.js";
 
 
 import dynamicDataRoutes from "./security/routes/dynamicData.routes.js";
@@ -78,6 +79,7 @@ app.use("/dynamic-tables", dynamicTableRoutes);
 app.use("/api/organisation", orgroutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/org-super-admin", orgSuperAdminRoutes);
+app.use("/api/forms", formsRoutes);
 
 
 // security routes
