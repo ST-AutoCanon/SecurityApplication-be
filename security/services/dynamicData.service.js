@@ -31,7 +31,6 @@ import { validatePayload } from "../../utils/dynamicField.validator.js";
 //     // const template = await getTemplate(masterAuthDB, templateId);
 // const template = await getTemplate(masterAuthDB, organisationId, templateId);
 
-
 //     if (!template) {
 //       return {
 //         success: false,
@@ -56,7 +55,7 @@ import { validatePayload } from "../../utils/dynamicField.validator.js";
 // console.log("Template ID:", templateId);
 // console.log("Allowed Fields:", allowedFields);
 //     console.log("Payload:", payload);
-    
+
 //     // STEP 5: Validate payload
 //     const validation = validatePayload(allowedFields, payload);
 
@@ -88,7 +87,6 @@ import { validatePayload } from "../../utils/dynamicField.validator.js";
 //     };
 //   }
 // };
-
 
 export const createRecordService = async (
   organisationId,
@@ -166,15 +164,15 @@ export const createRecordService = async (
 
     // STEP 6: Insert into Face Details
     // if (result.face_descriptor) {
-if (result.face_descriptor) {
-  await model.insertFaceDetails(
-    db,
-    schema,
-    table,
-    result.id,
-    result.face_descriptor,
-  );
-}
+    if (result.face_descriptor) {
+      await model.insertFaceDetails(
+        db,
+        schema,
+        table,
+        result.id,
+        result.face_descriptor,
+      );
+    }
     // STEP 7: Commit
     await db.query("COMMIT");
 
@@ -320,7 +318,6 @@ export const getRecordByIdService = async (organisationId, table, id) => {
 //   }
 // };
 
-
 export const updateRecordService = async (
   organisationId,
   table,
@@ -367,15 +364,15 @@ export const updateRecordService = async (
     );
 
     // STEP 4: Update Face Details (only if face changed)
-if (payload.face_descriptor) {
-  await model.updateFaceDetails(
-    db,
-    org.schema_name,
-    table,
-    id,
-    payload.face_descriptor,
-  );
-}
+    if (payload.face_descriptor) {
+      await model.updateFaceDetails(
+        db,
+        org.schema_name,
+        table,
+        id,
+        payload.face_descriptor,
+      );
+    }
 
     // STEP 5: Commit
     await db.query("COMMIT");
@@ -435,7 +432,6 @@ if (payload.face_descriptor) {
 //     };
 //   }
 // };
-
 
 export const deleteRecordService = async (organisationId, table, id) => {
   const org = await getOrganisationById(masterAuthDB, organisationId);
@@ -523,12 +519,12 @@ export const getTemplateMetadataService = async (
 
   // Get template fields
   // const fields = await model.getTemplateFields(masterAuthDB, templateId);
-const fields = await model.getTemplateFields(
-  masterAuthDB,
-  organisationId,
-  templateId,
+  const fields = await model.getTemplateFields(
+    masterAuthDB,
+    organisationId,
+    templateId,
   );
-  
+
   return {
     success: true,
     data: {
@@ -585,12 +581,12 @@ export const getModuleDetailsService = async (organisationId, templateId) => {
 
   // Get template fields
   // const fields = await model.getTemplateFields(masterAuthDB, templateId);
-const fields = await model.getTemplateFields(
-  masterAuthDB,
-  organisationId,
-  templateId,
+  const fields = await model.getTemplateFields(
+    masterAuthDB,
+    organisationId,
+    templateId,
   );
-  
+
   return {
     success: true,
     data: {
@@ -599,6 +595,3 @@ const fields = await model.getTemplateFields(
     },
   };
 };
-
-
-

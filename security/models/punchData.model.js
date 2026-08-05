@@ -125,7 +125,7 @@ export const getLastPunch = async (db, schema, userId) => {
   console.time("SQL");
   const result = await db.query(query, [userId]);
 
-console.timeEnd("SQL");
+  console.timeEnd("SQL");
   return result.rows[0] || null;
 };
 
@@ -159,8 +159,6 @@ VALUES ($1,$2,$3,$4,$5)
   return result.rows[0];
 };
 
-
-
 // export const searchNearestFace = async (db, schema, descriptor) => {
 //   if (!Array.isArray(descriptor)) {
 //     throw new Error("Descriptor must be an array");
@@ -183,7 +181,6 @@ VALUES ($1,$2,$3,$4,$5)
 
 //   return result.rows[0] || null;
 // };
-
 
 export const searchNearestFace = async (db, schema, descriptor) => {
   if (!Array.isArray(descriptor)) {

@@ -58,7 +58,6 @@ export const getAllRegisteredFaces = async (organisationId) => {
  * FACE PUNCH SERVICE
  */
 
-
 // export const facePunchService = async (
 //   organisationId,
 //   inputDescriptor,
@@ -206,7 +205,6 @@ export const getAllRegisteredFaces = async (organisationId) => {
 //   }
 // };
 
-
 /**
  * VERIFY FACE SERVICE
  */
@@ -337,7 +335,6 @@ export const verifyFaceService = async (
   }
 };
 
-
 /**
  * CONFIRM PUNCH SERVICE
  */
@@ -430,8 +427,6 @@ export const verifyFaceService = async (
 //     };
 //   }
 // };
-
-
 
 export const confirmPunchService = async (
   organisationId,
@@ -535,4 +530,3 @@ const euclideanDistance = (a, b) => {
 
   return Math.sqrt(sum);
 };
-
