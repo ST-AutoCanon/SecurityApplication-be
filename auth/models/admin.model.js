@@ -329,3 +329,119 @@ export const activateSecurityUser = async (client, organisationId, userId) => {
   return result.rows[0];
 };
 
+
+
+// buinsess data
+
+
+
+export const updateBusinessData = async (
+  client,
+  schemaName,
+  tableName,
+  id,
+  data,
+) => {
+  const keys = Object.keys(data);
+
+  const setClause = keys
+    .map((key, index) => `"${key}" = $${index + 1}`)
+    .join(", ");
+
+  const values = [...keys.map((key) => data[key]), id];
+
+  const query = `
+    UPDATE "${schemaName}"."${tableName}"
+    SET ${setClause}
+    WHERE id = $${values.length}
+    RETURNING *;
+  `;
+
+  const result = await client.query(query, values);
+
+  return result.rows[0] ?? null;
+};
+
+
+export const getBusinessDataById = async (
+  client,
+  schemaName,
+  tableName,
+  id,
+) => {
+  const result = await client.query(
+    `
+      SELECT *
+      FROM "${schemaName}"."${tableName}"
+      WHERE id = $1
+      LIMIT 1
+    `,
+    [id],
+  );
+
+  if (!result.rows.length) {
+    return null;
+  }
+
+  const row = result.rows[0];
+
+  if (row.profile_photo) {
+    row.profile_photo = `${process.env.BASE_URL}/${row.profile_photo}`;
+  }
+
+  delete row.face_descriptor;
+
+  return row;
+};
+
+export const deactivateBusinessData = async (
+  client,
+  schemaName,
+  tableName,
+  id,
+) => {
+  const result = await client.query(
+    `
+        UPDATE "${schemaName}"."${tableName}"
+        SET status='Inactive',
+            updated_at=NOW()
+        WHERE id=$1
+        RETURNING *;
+    `,
+    [id],
+  );
+
+  return result.rows[0];
+};
+
+export const activateBusinessData = async (
+  client,
+  schemaName,
+  tableName,
+  id,
+) => {
+  const result = await client.query(
+    `
+        UPDATE "${schemaName}"."${tableName}"
+        SET status='Active',
+            updated_at=NOW()
+        WHERE id=$1
+        RETURNING *;
+    `,
+    [id],
+  );
+
+  return result.rows[0];
+};
+
+export const deleteBusinessData = async (client, schemaName, tableName, id) => {
+  await client.query(
+    `
+        DELETE FROM "${schemaName}"."${tableName}"
+        WHERE id=$1
+    `,
+    [id],
+  );
+
+  return true;
+};
