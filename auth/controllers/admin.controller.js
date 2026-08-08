@@ -95,6 +95,321 @@ export const getAllBusinessData = async (req, res) => {
   }
 };
 
+// export const updateBusinessData = async (req, res) => {
+//   const { table, id } = req.params;
+
+//   const organisationId = req.user.organisation_id;
+//   const orgType = req.user.org_type.toLowerCase();
+
+//   const businessDB = getBusinessDB(orgType);
+
+//   const businessClient = await businessDB.connect();
+//   const authClient = await masterAuthDB.connect();
+
+//   try {
+//     const org = await model.getOrganisationSchema(authClient, organisationId);
+
+//     const data = await service.updateBusinessData(
+//       businessClient,
+//       org.schema_name,
+//       table,
+//       id,
+//       req.body,
+//     );
+
+//     res.json({
+//       success: true,
+//       data,
+//     });
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     businessClient.release();
+//     authClient.release();
+//   }
+// };
+
+// export const deactivateBusinessData = async (req, res) => {
+//   const { table, id } = req.params;
+
+//   const organisationId = req.user.organisation_id;
+//   const orgType = req.user.org_type.toLowerCase();
+
+//   const businessDB = getBusinessDB(orgType);
+
+//   const businessClient = await businessDB.connect();
+//   const authClient = await masterAuthDB.connect();
+
+//   try {
+//     const org = await model.getOrganisationSchema(authClient, organisationId);
+
+//     const data = await service.deactivateBusinessData(
+//       businessClient,
+//       org.schema_name,
+//       table,
+//       id,
+//     );
+
+//     res.json({
+//       success: true,
+//       data,
+//     });
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     businessClient.release();
+//     authClient.release();
+//   }
+// };
+
+// export const activateBusinessData = async (req, res) => {
+//   const { table, id } = req.params;
+
+//   const organisationId = req.user.organisation_id;
+//   const orgType = req.user.org_type.toLowerCase();
+
+//   const businessDB = getBusinessDB(orgType);
+
+//   const businessClient = await businessDB.connect();
+//   const authClient = await masterAuthDB.connect();
+
+//   try {
+//     const org = await model.getOrganisationSchema(authClient, organisationId);
+
+//     const data = await service.activateBusinessData(
+//       businessClient,
+//       org.schema_name,
+//       table,
+//       id,
+//     );
+
+//     res.json({
+//       success: true,
+//       data,
+//     });
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     businessClient.release();
+//     authClient.release();
+//   }
+// };
+
+// export const getBusinessDataById = async (req, res) => {
+//   const { table, id } = req.params;
+
+//   const organisationId = req.user.organisation_id;
+//   const orgType = req.user.org_type?.toLowerCase();
+
+//   const businessDB = getBusinessDB(orgType);
+
+//   const businessClient = await businessDB.connect();
+//   const authClient = await masterAuthDB.connect();
+
+//   try {
+//     const org = await model.getOrganisationSchema(authClient, organisationId);
+
+//     const data = await service.getBusinessDataById(
+//       businessClient,
+//       org.schema_name,
+//       table,
+//       id,
+//     );
+
+//     if (!data) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Record not found",
+//       });
+//     }
+
+//     return res.json({
+//       success: true,
+//       data,
+//     });
+//   } catch (err) {
+//     console.error(err);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     businessClient.release();
+//     authClient.release();
+//   }
+// };
+
+// export const deleteBusinessData = async (req, res) => {
+//   const { table, id } = req.params;
+
+//   const organisationId = req.user.organisation_id;
+//   const orgType = req.user.org_type.toLowerCase();
+
+//   const businessDB = getBusinessDB(orgType);
+
+//   const businessClient = await businessDB.connect();
+//   const authClient = await masterAuthDB.connect();
+
+//   try {
+//     const org = await model.getOrganisationSchema(authClient, organisationId);
+
+//     await service.deleteBusinessData(
+//       businessClient,
+//       org.schema_name,
+//       table,
+//       id,
+//     );
+
+//     res.json({
+//       success: true,
+//       message: "Deleted successfully",
+//     });
+//   } catch (err) {
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     businessClient.release();
+//     authClient.release();
+//   }
+// };
+
+
+
+
+export const getBusinessDataById = async (req, res) => {
+  try {
+    const { table, id } = req.params;
+
+    const organisationId = req.user.organisation_id;
+    const orgType = req.user.org_type;
+
+    const result = await service.getBusinessDataByIdService(
+      organisationId,
+      orgType,
+      table,
+      id,
+    );
+
+    return res.status(result.success ? 200 : 404).json(result);
+  } catch (error) {
+    console.error("Get Business Data Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+export const updateBusinessData = async (req, res) => {
+  try {
+    const { table, id } = req.params;
+
+    const organisationId = req.user.organisation_id;
+    const orgType = req.user.org_type;
+
+    const result = await service.updateBusinessDataService(
+      organisationId,
+      orgType,
+      table,
+      id,
+      req.body,
+    );
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Update Business Data Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+export const activateBusinessData = async (req, res) => {
+  try {
+    const { table, id } = req.params;
+
+    const organisationId = req.user.organisation_id;
+    const orgType = req.user.org_type;
+
+    const result = await service.activateBusinessDataService(
+      organisationId,
+      orgType,
+      table,
+      id,
+    );
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Activate Business Data Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+export const deactivateBusinessData = async (req, res) => {
+  try {
+    const { table, id } = req.params;
+
+    const organisationId = req.user.organisation_id;
+    const orgType = req.user.org_type;
+
+    const result = await service.deactivateBusinessDataService(
+      organisationId,
+      orgType,
+      table,
+      id,
+    );
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Deactivate Business Data Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+export const deleteBusinessData = async (req, res) => {
+  try {
+    const { table, id } = req.params;
+
+    const organisationId = req.user.organisation_id;
+    const orgType = req.user.org_type;
+
+    const result = await service.deleteBusinessDataService(
+      organisationId,
+      orgType,
+      table,
+      id,
+    );
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Delete Business Data Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
 export const getSecurityUsers = async (req, res) => {
   try {
     const organisationId = req.user.organisation_id;

@@ -17,6 +17,7 @@ import {
   vehiclesTemplate,
   applyExcelStyle,
 } from "../templates/apartmentExcel.template.js";
+import { formatExcelDate } from "../templates/excelDate.js";
 
 /**
  * =====================================
@@ -93,7 +94,8 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
 
         gender: row.gender,
 
-        date_of_birth: row.date_of_birth,
+        // date_of_birth: row.date_of_birth,
+        date_of_birth: formatExcelDate(row.date_of_birth),
 
         mobile_number: row.mobile_number,
 
@@ -115,7 +117,8 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
 
         ownership_type: row.ownership_type,
 
-        move_in_date: row.move_in_date,
+        // move_in_date: row.move_in_date,
+        move_in_date: formatExcelDate(row.move_in_date),
 
         family_member_count: row.family_member_count || 0,
 
@@ -129,6 +132,7 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
 
         status: row.status ?? true,
       };
+
 
       const codeExist = await MemberModel.checkMemberCodeExists(
         client,

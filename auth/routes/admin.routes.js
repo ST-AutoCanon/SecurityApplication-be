@@ -46,4 +46,21 @@ router.get("/delivery-persons", controller.getAllDeliveryPersons);
 // admin.routes.js
 
 router.get("/business-data", controller.getAllBusinessData);
+
+router.get("/business-data/:table/:id", controller.getBusinessDataById);
+
+router.put("/business-data/:table/:id", controller.updateBusinessData);
+
+router.patch(
+  "/business-data/:table/:id/deactivate",
+  controller.deactivateBusinessData,
+);
+
+router.patch(
+  "/business-data/:table/:id/activate",
+  controller.activateBusinessData,
+);
+
+router.delete("/business-data/:table/:id", controller.deleteBusinessData);
+
 export default router;

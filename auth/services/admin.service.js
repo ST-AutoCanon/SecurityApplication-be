@@ -1,6 +1,7 @@
 import masterAuthDB from "../../config/masterAuthDB.js";
 import * as model from "../models/admin.model.js";
 import { sendSecurityInvitation } from "./mail.service.js";
+import { getBusinessDB } from "../../db/dbRouter.js";
 import {
   getOrganisationSchema,
   getDeliveryPersons,
@@ -152,6 +153,296 @@ export const fetchAllBusinessData = async (
   // console.log("👉 FINAL OUTPUT:", output);
 
   return output;
+};
+
+
+// export const updateBusinessData = async (
+//   client,
+//   schemaName,
+//   table,
+//   id,
+//   body,
+// ) => {
+//   return await model.updateBusinessData(client, schemaName, table, id, body);
+// };
+
+// export const getBusinessDataById = async (
+//   businessClient,
+//   schemaName,
+//   table,
+//   id,
+// ) => {
+//   return await model.getBusinessDataById(
+//     businessClient,
+//     schemaName,
+//     table,
+//     id,
+//   );
+// };
+
+// export const deactivateBusinessData = async (client, schemaName, table, id) => {
+//   return await model.deactivateBusinessData(client, schemaName, table, id);
+// };
+
+// export const activateBusinessData = async (client, schemaName, table, id) => {
+//   return await model.activateBusinessData(client, schemaName, table, id);
+// };
+
+
+// export const deleteBusinessData = async (client, schemaName, table, id) => {
+//   return await model.deleteBusinessData(client, schemaName, table, id);
+// };
+
+
+
+export const getBusinessDataByIdService = async (
+  organisationId,
+  orgType,
+  table,
+  id,
+) => {
+  const businessDB = getBusinessDB(orgType.toLowerCase());
+
+  const businessClient = await businessDB.connect();
+  const authClient = await masterAuthDB.connect();
+
+  try {
+    const org = await model.getOrganisationSchema(authClient, organisationId);
+
+    if (!org) {
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    const data = await model.getBusinessDataById(
+      businessClient,
+      org.schema_name,
+      table,
+      id,
+    );
+
+    if (!data) {
+      return {
+        success: false,
+        message: "Record not found",
+      };
+    }
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    businessClient.release();
+    authClient.release();
+  }
+};
+export const updateBusinessDataService = async (
+  organisationId,
+  orgType,
+  table,
+  id,
+  body,
+) => {
+  const businessDB = getBusinessDB(orgType.toLowerCase());
+
+  const businessClient = await businessDB.connect();
+  const authClient = await masterAuthDB.connect();
+
+  try {
+    await businessClient.query("BEGIN");
+
+    const org = await model.getOrganisationSchema(authClient, organisationId);
+
+    if (!org) {
+      await businessClient.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    const data = await model.updateBusinessData(
+      businessClient,
+      org.schema_name,
+      table,
+      id,
+      body,
+    );
+
+    await businessClient.query("COMMIT");
+
+    return {
+      success: true,
+      message: "Updated successfully",
+      data,
+    };
+  } catch (error) {
+    await businessClient.query("ROLLBACK");
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    businessClient.release();
+    authClient.release();
+  }
+};
+export const activateBusinessDataService = async (
+  organisationId,
+  orgType,
+  table,
+  id,
+) => {
+  const businessDB = getBusinessDB(orgType.toLowerCase());
+
+  const businessClient = await businessDB.connect();
+  const authClient = await masterAuthDB.connect();
+
+  try {
+    await businessClient.query("BEGIN");
+
+    const org = await model.getOrganisationSchema(authClient, organisationId);
+
+    if (!org) {
+      await businessClient.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    const data = await model.activateBusinessData(
+      businessClient,
+      org.schema_name,
+      table,
+      id,
+    );
+
+    await businessClient.query("COMMIT");
+
+    return {
+      success: true,
+      message: "Activated successfully",
+      data,
+    };
+  } catch (error) {
+    await businessClient.query("ROLLBACK");
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    businessClient.release();
+    authClient.release();
+  }
+};
+export const deactivateBusinessDataService = async (
+  organisationId,
+  orgType,
+  table,
+  id,
+) => {
+  const businessDB = getBusinessDB(orgType.toLowerCase());
+
+  const businessClient = await businessDB.connect();
+  const authClient = await masterAuthDB.connect();
+
+  try {
+    await businessClient.query("BEGIN");
+
+    const org = await model.getOrganisationSchema(authClient, organisationId);
+
+    if (!org) {
+      await businessClient.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    const data = await model.deactivateBusinessData(
+      businessClient,
+      org.schema_name,
+      table,
+      id,
+    );
+
+    await businessClient.query("COMMIT");
+
+    return {
+      success: true,
+      message: "Deactivated successfully",
+      data,
+    };
+  } catch (error) {
+    await businessClient.query("ROLLBACK");
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    businessClient.release();
+    authClient.release();
+  }
+};
+export const deleteBusinessDataService = async (
+  organisationId,
+  orgType,
+  table,
+  id,
+) => {
+  const businessDB = getBusinessDB(orgType.toLowerCase());
+
+  const businessClient = await businessDB.connect();
+  const authClient = await masterAuthDB.connect();
+
+  try {
+    await businessClient.query("BEGIN");
+
+    const org = await model.getOrganisationSchema(authClient, organisationId);
+
+    if (!org) {
+      await businessClient.query("ROLLBACK");
+
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    await model.deleteBusinessData(businessClient, org.schema_name, table, id);
+
+    await businessClient.query("COMMIT");
+
+    return {
+      success: true,
+      message: "Deleted successfully",
+    };
+  } catch (error) {
+    await businessClient.query("ROLLBACK");
+
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    businessClient.release();
+    authClient.release();
+  }
 };
 
 export const getSecurityUsersService = async (organisationId) => {
