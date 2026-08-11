@@ -136,26 +136,12 @@ export const getTableData = async (client, schemaName, tableName) => {
     FROM "${schemaName}"."${tableName}"
   `);
 
-  // result.rows.forEach((row) => {
-  //   if (row.punch_time) {
-  //     console.log("punch_time:", row.punch_time);
-  //     console.log("typeof:", typeof row.punch_time);
-  //     console.log("instanceof Date:", row.punch_time instanceof Date);
-  //     console.log("toString():", row.punch_time.toString());
-  //     console.log("toISOString():", row.punch_time.toISOString());
-  //   }
-  // });
-
   const filteredRows = result.rows.map(
     ({ organisation_schema, face_descriptor, ...rest }) => {
       if (rest.profile_photo) {
         rest.profile_photo = `${process.env.BASE_URL}/${rest.profile_photo}`;
       }
-      // if (rest.punch_time instanceof Date) {
-      //   rest.punch_time = rest.punch_time.toLocaleString("sv-SE", {
-      //     timeZone: "Asia/Kolkata",
-      //   });
-      // }
+
       if (rest.punch_time instanceof Date) {
         rest.punch_time = rest.punch_time.toLocaleString("en-IN", {
           timeZone: "Asia/Kolkata",
@@ -329,11 +315,7 @@ export const activateSecurityUser = async (client, organisationId, userId) => {
   return result.rows[0];
 };
 
-
-
 // buinsess data
-
-
 
 export const updateBusinessData = async (
   client,
@@ -362,7 +344,6 @@ export const updateBusinessData = async (
   return result.rows[0] ?? null;
 };
 
-
 export const getBusinessDataById = async (
   client,
   schemaName,
@@ -389,7 +370,7 @@ export const getBusinessDataById = async (
     row.profile_photo = `${process.env.BASE_URL}/${row.profile_photo}`;
   }
 
-  delete row.face_descriptor;
+  // delete row.face_descriptor;
 
   return row;
 };
