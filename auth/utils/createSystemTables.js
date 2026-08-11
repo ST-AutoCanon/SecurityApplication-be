@@ -20,14 +20,17 @@ export const createSystemTables = async (db, schema) => {
       record_id BIGINT NOT NULL,
       face_descriptor VECTOR(512) NOT NULL,
       created_at TIMESTAMPTZ DEFAULT NOW(),
-      updated_at TIMESTAMPTZ DEFAULT NOW(),
-
-      CONSTRAINT face_details_record_unique
-      UNIQUE (table_name, record_id)
+      updated_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
 
-  // HNSW Index
+  // Normal index for table_name + record_id
+  await db.query(`
+    CREATE INDEX IF NOT EXISTS idx_face_details_table_record
+    ON "${schema}".face_details (table_name, record_id);
+  `);
+
+  // HNSW vector index
   await db.query(`
     CREATE INDEX IF NOT EXISTS face_details_face_descriptor_hnsw_idx
     ON "${schema}".face_details

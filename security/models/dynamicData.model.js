@@ -1,136 +1,158 @@
-const toVector = (value) => {
-  if (!Array.isArray(value)) return value;
+// const toVector = (value) => {
+//   if (!Array.isArray(value)) return value;
 
-  return `[${value.join(",")}]`;
-};
+//   return `[${value.join(",")}]`;
+// };
 
 
 
-const fromVector = (vector) => {
-  if (!vector) return vector;
+// const fromVector = (vector) => {
+//   if (!vector) return vector;
 
-  if (typeof vector === "string") {
-    return vector.replace("[", "").replace("]", "").split(",").map(Number);
-  }
+//   if (typeof vector === "string") {
+//     return vector.replace("[", "").replace("]", "").split(",").map(Number);
+//   }
 
-  return vector;
-};
+//   return vector;
+// };
 
-export const insertDynamicRecord = async (db, schema, table, data) => {
-  const keys = Object.keys(data);
+// export const insertDynamicRecord = async (db, schema, table, data) => {
+//   const keys = Object.keys(data);
 
-  const values = Object.values(data).map((value, index) => {
-    if (keys[index] === "face_descriptor") {
-      return toVector(value);
-    }
+//   const values = Object.values(data).map((value, index) => {
+//     if (keys[index] === "face_descriptor") {
+//       return toVector(value);
+//     }
 
-    return value;
-  });
+//     return value;
+//   });
 
-  const columns = keys.map((k) => `"${k}"`).join(", ");
+//   const columns = keys.map((k) => `"${k}"`).join(", ");
 
-  const placeholders = keys
-    .map((key, index) => {
-      if (key === "face_descriptor") {
-        return `$${index + 1}::vector`;
-      }
+//   const placeholders = keys
+//     .map((key, index) => {
+//       if (key === "face_descriptor") {
+//         return `$${index + 1}::vector`;
+//       }
 
-      return `$${index + 1}`;
-    })
-    .join(", ");
+//       return `$${index + 1}`;
+//     })
+//     .join(", ");
 
-  const query = `
-    INSERT INTO "${schema}"."${table}"
-    (${columns})
-    VALUES (${placeholders})
-    RETURNING *;
-  `;
+//   const query = `
+//     INSERT INTO "${schema}"."${table}"
+//     (${columns})
+//     VALUES (${placeholders})
+//     RETURNING *;
+//   `;
 
-  const result = await db.query(query, values);
+//   const result = await db.query(query, values);
 
-  return result.rows[0];
-};
+//   return result.rows[0];
+// };
 
-export const getAllRecords = async (db, schema, table) => {
-  const query = `
- SELECT *
- FROM "${schema}"."${table}"
- ORDER BY id DESC;
- `;
+// export const getAllRecords = async (db, schema, table) => {
+//   const query = `
+//  SELECT *
+//  FROM "${schema}"."${table}"
+//  ORDER BY id DESC;
+//  `;
 
-  const result = await db.query(query);
+//   const result = await db.query(query);
 
-  return result.rows.map((row) => {
-    if (row.face_descriptor) {
-      row.face_descriptor = fromVector(row.face_descriptor);
-    }
+//   return result.rows.map((row) => {
+//     if (row.face_descriptor) {
+//       row.face_descriptor = fromVector(row.face_descriptor);
+//     }
 
-    return row;
-  });
-};
+//     return row;
+//   });
+// };
 
-export const getRecordById = async (db, schema, table, id) => {
-  const query = `
- SELECT *
- FROM "${schema}"."${table}"
- WHERE id=$1
- LIMIT 1;
- `;
+// export const getRecordById = async (db, schema, table, id) => {
+//   const query = `
+//  SELECT *
+//  FROM "${schema}"."${table}"
+//  WHERE id=$1
+//  LIMIT 1;
+//  `;
 
-  const result = await db.query(query, [id]);
+//   const result = await db.query(query, [id]);
 
-  const row = result.rows[0];
+//   const row = result.rows[0];
 
-  if (row?.face_descriptor) {
-    row.face_descriptor = fromVector(row.face_descriptor);
-  }
+//   if (row?.face_descriptor) {
+//     row.face_descriptor = fromVector(row.face_descriptor);
+//   }
 
-  return row;
-};
+//   return row;
+// };
 
-export const updateDynamicRecord = async (db, schema, table, id, data) => {
-  const keys = Object.keys(data);
+// export const updateDynamicRecord = async (db, schema, table, id, data) => {
+//   const keys = Object.keys(data);
 
-  const values = Object.values(data).map((value, index) => {
-    if (keys[index] === "face_descriptor") {
-      return toVector(value);
-    }
+//   const values = Object.values(data).map((value, index) => {
+//     if (keys[index] === "face_descriptor") {
+//       return toVector(value);
+//     }
 
-    return value;
-  });
+//     return value;
+//   });
 
-  const setClause = keys
-    .map((key, index) => {
-      if (key === "face_descriptor") {
-        return `"${key}"=$${index + 1}::vector`;
-      }
+//   const setClause = keys
+//     .map((key, index) => {
+//       if (key === "face_descriptor") {
+//         return `"${key}"=$${index + 1}::vector`;
+//       }
 
-      return `"${key}"=$${index + 1}`;
-    })
-    .join(", ");
+//       return `"${key}"=$${index + 1}`;
+//     })
+//     .join(", ");
 
-  const query = `
-    UPDATE "${schema}"."${table}"
-    SET ${setClause}
-    WHERE id=$${keys.length + 1}
-    RETURNING *;
-  `;
+//   const query = `
+//     UPDATE "${schema}"."${table}"
+//     SET ${setClause}
+//     WHERE id=$${keys.length + 1}
+//     RETURNING *;
+//   `;
 
-  const result = await db.query(query, [...values, id]);
+//   const result = await db.query(query, [...values, id]);
 
-  return result.rows[0];
-};
+//   return result.rows[0];
+// };
 
-export const deleteDynamicRecord = async (db, schema, table, id) => {
-  const query = `
-    DELETE FROM "${schema}"."${table}"
-    WHERE id = $1
-    RETURNING *;
-  `;
+// export const deleteDynamicRecord = async (db, schema, table, id) => {
+//   const query = `
+//     DELETE FROM "${schema}"."${table}"
+//     WHERE id = $1
+//     RETURNING *;
+//   `;
 
-  const result = await db.query(query, [id]);
-  return result.rows[0];
-};
+//   const result = await db.query(query, [id]);
+//   return result.rows[0];
+// };
+
+// // export const getTemplateFields = async (db, organisationId, templateId) => {
+// //   const query = `
+// //     SELECT
+// //       ft.field_key,
+// //       ft.field_label,
+// //       dtf.is_required,
+// //       ft.field_type_id
+// //     FROM auth.dynamic_tables dt
+// //     JOIN auth.dynamic_table_fields dtf
+// //       ON dt.id = dtf.dynamic_table_id
+// //     JOIN auth.field_templates ft
+// //       ON ft.id = dtf.field_template_id
+// //     WHERE dt.organisation_id = $1
+// //       AND dt.template_id = $2
+// //     ORDER BY dtf.display_order;
+// //   `;
+
+// //   const result = await db.query(query, [organisationId, templateId]);
+
+// //   return result.rows;
+// // };
 
 // export const getTemplateFields = async (db, organisationId, templateId) => {
 //   const query = `
@@ -138,7 +160,11 @@ export const deleteDynamicRecord = async (db, schema, table, id) => {
 //       ft.field_key,
 //       ft.field_label,
 //       dtf.is_required,
-//       ft.field_type_id
+//       ft.field_type_id,
+//       ft.validation,
+//       ft.options,
+//       ft.placeholder,
+//       ft.default_value
 //     FROM auth.dynamic_tables dt
 //     JOIN auth.dynamic_table_fields dtf
 //       ON dt.id = dtf.dynamic_table_id
@@ -154,7 +180,489 @@ export const deleteDynamicRecord = async (db, schema, table, id) => {
 //   return result.rows;
 // };
 
-export const getTemplateFields = async (db, organisationId, templateId) => {
+// export const getTemplate = async (db, organisationId, templateId) => {
+//   const query = `
+//     SELECT
+//       dt.template_id AS id,
+//       tt.template_name,
+//       dt.table_name,
+//       dt.display_name
+//     FROM auth.dynamic_tables dt
+//     JOIN auth.table_templates tt
+//       ON tt.id = dt.template_id
+//     WHERE dt.organisation_id = $1
+//       AND dt.template_id = $2
+//     LIMIT 1;
+//   `;
+
+//   const result = await db.query(query, [organisationId, templateId]);
+
+//   return result.rows[0];
+// };
+
+// export const getModules = async (db, organisationId) => {
+//   const query = `
+//     SELECT
+//       dt.template_id,
+//       tt.template_name,
+//       dt.table_name,
+//       dt.display_name
+//     FROM auth.dynamic_tables dt
+//     JOIN auth.table_templates tt
+//       ON tt.id = dt.template_id
+//     WHERE dt.organisation_id = $1
+//     ORDER BY tt.template_name;
+//   `;
+
+//   const result = await db.query(query, [organisationId]);
+
+//   return result.rows;
+// };
+
+// export const getTemplateDetails = async (db, organisationId, templateId) => {
+//   const query = `
+//     SELECT
+//       dt.template_id,
+//       tt.template_name,
+//       dt.table_name,
+//       dt.display_name
+//     FROM auth.dynamic_tables dt
+//     JOIN auth.table_templates tt
+//       ON tt.id = dt.template_id
+//     WHERE dt.organisation_id = $1
+//       AND dt.template_id = $2
+//     LIMIT 1;
+//   `;
+
+//   const result = await db.query(query, [organisationId, templateId]);
+
+//   return result.rows[0];
+// };
+
+// export const insertFaceDetails = async (
+//   db,
+//   schema,
+//   tableName,
+//   recordId,
+//   faceDescriptor,
+// ) => {
+//   const query = `
+//     INSERT INTO "${schema}".face_details (
+//       table_name,
+//       record_id,
+//       face_descriptor
+//     )
+//     VALUES ($1, $2, $3::vector)
+//     RETURNING *;
+//   `;
+
+//   const result = await db.query(query, [
+//     tableName,
+//     recordId,
+//     toVector(faceDescriptor),
+//   ]);
+
+//   return result.rows[0];
+// };
+
+// export const updateFaceDetails = async (
+//   db,
+//   schema,
+//   tableName,
+//   recordId,
+//   faceDescriptor,
+// ) => {
+//   const query = `
+//     UPDATE "${schema}".face_details
+//     SET
+//       face_descriptor = $3::vector,
+//       updated_at = NOW()
+//     WHERE
+//       table_name = $1
+//       AND record_id = $2
+//     RETURNING *;
+//   `;
+
+//   const result = await db.query(query, [
+//     tableName,
+//     recordId,
+//     toVector(faceDescriptor),
+//   ]);
+
+//   return result.rows[0];
+// };
+
+// export const deleteFaceDetails = async (db, schema, tableName, recordId) => {
+//   const query = `
+//     DELETE FROM "${schema}".face_details
+//     WHERE
+//       table_name = $1
+//       AND record_id = $2
+//     RETURNING *;
+//   `;
+
+//   const result = await db.query(query, [tableName, recordId]);
+
+//   return result.rows[0];
+// };
+
+// // export const getFaceDetails = async (db, schema) => {
+// //   const query = `
+// //     SELECT
+// //       table_name,
+// //       record_id,
+// //       face_descriptor
+// //     FROM "${schema}".face_details;
+// //   `;
+
+// //   const result = await db.query(query);
+// //   return result.rows;
+// // };
+
+// export const getFaceDetails = async (db, schema) => {
+//   const query = `
+//     SELECT
+//       table_name,
+//       record_id,
+//       face_descriptor
+//     FROM "${schema}".face_details;
+//   `;
+
+//   const result = await db.query(query);
+
+//   return result.rows.map((row) => ({
+//     ...row,
+//     face_descriptor: fromVector(row.face_descriptor),
+//   }));
+// };
+
+
+
+// ============================================================
+// VECTOR HELPERS
+// ============================================================
+
+const toVector = (value) => {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+
+  return `[${value.join(",")}]`;
+};
+
+const fromVector = (vector) => {
+  if (!vector) {
+    return vector;
+  }
+
+  if (typeof vector === "string") {
+    return vector
+      .replace("[", "")
+      .replace("]", "")
+      .split(",")
+      .map(Number);
+  }
+
+  return vector;
+};
+
+
+
+
+// ============================================================
+// INSERT DYNAMIC RECORD
+//
+// face_descriptor is stored separately in face_details.
+//
+// If there are no dynamic fields, PostgreSQL will use
+// DEFAULT VALUES. This allows records that only have
+// face descriptors.
+// ============================================================
+
+export const insertDynamicRecord = async (
+  db,
+  schema,
+  table,
+  data = {},
+) => {
+  // ----------------------------------------------------------
+  // Remove face_descriptor
+  // It is stored in face_details, not the dynamic table.
+  // ----------------------------------------------------------
+
+  const dynamicData = {
+    ...data,
+  };
+
+  delete dynamicData.face_descriptor;
+
+  const keys = Object.keys(dynamicData);
+
+  // ----------------------------------------------------------
+  // CASE 1: No dynamic fields
+  // ----------------------------------------------------------
+
+  if (keys.length === 0) {
+    const query = `
+      INSERT INTO "${schema}"."${table}"
+      DEFAULT VALUES
+      RETURNING *;
+    `;
+
+    const result = await db.query(query);
+
+    return result.rows[0];
+  }
+
+  // ----------------------------------------------------------
+  // CASE 2: Dynamic fields exist
+  // ----------------------------------------------------------
+
+  const values = Object.values(dynamicData);
+
+  const columns = keys
+    .map((key) => `"${key}"`)
+    .join(", ");
+
+  const placeholders = keys
+    .map((_, index) => `$${index + 1}`)
+    .join(", ");
+
+  const query = `
+    INSERT INTO "${schema}"."${table}"
+      (${columns})
+    VALUES
+      (${placeholders})
+    RETURNING *;
+  `;
+
+  const result = await db.query(
+    query,
+    values,
+  );
+
+  return result.rows[0];
+};
+
+
+// ============================================================
+// GET ALL RECORDS
+//
+// Face descriptors are retrieved from face_details.
+// ============================================================
+
+export const getAllRecords = async (
+  db,
+  schema,
+  table,
+) => {
+  const query = `
+    SELECT *
+    FROM "${schema}"."${table}"
+    ORDER BY id DESC;
+  `;
+
+  const result = await db.query(query);
+
+  const records = result.rows;
+
+  if (records.length === 0) {
+    return [];
+  }
+
+  // Get all face vectors for these records
+  const recordIds = records.map(
+    (record) => record.id,
+  );
+
+  const faceQuery = `
+    SELECT
+      record_id,
+      id,
+      face_descriptor
+    FROM "${schema}".face_details
+    WHERE table_name = $1
+      AND record_id = ANY($2::int[])
+    ORDER BY record_id, id;
+  `;
+
+  const faceResult = await db.query(
+    faceQuery,
+    [
+      table,
+      recordIds,
+    ],
+  );
+
+  // Group face vectors by record
+  const faceMap = {};
+
+  for (const row of faceResult.rows) {
+    if (!faceMap[row.record_id]) {
+      faceMap[row.record_id] = [];
+    }
+
+    faceMap[row.record_id].push(
+      fromVector(row.face_descriptor),
+    );
+  }
+
+  // Attach face descriptors to records
+  return records.map((record) => ({
+    ...record,
+    face_descriptor:
+      faceMap[record.id] || [],
+  }));
+};
+
+// ============================================================
+// GET RECORD BY ID
+// ============================================================
+
+export const getRecordById = async (
+  db,
+  schema,
+  table,
+  id,
+) => {
+  const query = `
+    SELECT *
+    FROM "${schema}"."${table}"
+    WHERE id = $1
+    LIMIT 1;
+  `;
+
+  const result = await db.query(
+    query,
+    [id],
+  );
+
+  const record = result.rows[0];
+
+  if (!record) {
+    return null;
+  }
+
+  // Get face vectors
+  const faceQuery = `
+    SELECT
+      id,
+      face_descriptor
+    FROM "${schema}".face_details
+    WHERE table_name = $1
+      AND record_id = $2
+    ORDER BY id;
+  `;
+
+  const faceResult = await db.query(
+    faceQuery,
+    [
+      table,
+      id,
+    ],
+  );
+  console.log("FACE DETAILS RESULT:", faceResult.rows);
+  
+  return {
+    ...record,
+    face_descriptor:
+      faceResult.rows.map((row) =>
+        fromVector(row.face_descriptor),
+      ),
+  };
+};
+
+// ============================================================
+// UPDATE DYNAMIC RECORD
+//
+// face_descriptor is NOT updated here.
+// It is handled separately by updateFaceDetails().
+// ============================================================
+
+export const updateDynamicRecord = async (
+  db,
+  schema,
+  table,
+  id,
+  data,
+) => {
+  // Remove face_descriptor
+  const dynamicData = { ...data };
+
+  delete dynamicData.face_descriptor;
+
+  const keys = Object.keys(dynamicData);
+
+  // Nothing to update in dynamic table
+  if (keys.length === 0) {
+    return await getRecordById(
+      db,
+      schema,
+      table,
+      id,
+    );
+  }
+
+  const values = Object.values(dynamicData);
+
+  const setClause = keys
+    .map(
+      (key, index) =>
+        `"${key}" = $${index + 1}`,
+    )
+    .join(", ");
+
+  const query = `
+    UPDATE "${schema}"."${table}"
+    SET ${setClause}
+    WHERE id = $${keys.length + 1}
+    RETURNING *;
+  `;
+
+  const result = await db.query(
+    query,
+    [
+      ...values,
+      id,
+    ],
+  );
+
+  return result.rows[0];
+};
+
+// ============================================================
+// DELETE DYNAMIC RECORD
+// ============================================================
+
+export const deleteDynamicRecord = async (
+  db,
+  schema,
+  table,
+  id,
+) => {
+  const query = `
+    DELETE FROM "${schema}"."${table}"
+    WHERE id = $1
+    RETURNING *;
+  `;
+
+  const result = await db.query(
+    query,
+    [id],
+  );
+
+  return result.rows[0];
+};
+
+// ============================================================
+// GET TEMPLATE FIELDS
+// ============================================================
+
+export const getTemplateFields = async (
+  db,
+  organisationId,
+  templateId,
+) => {
   const query = `
     SELECT
       ft.field_key,
@@ -175,12 +683,26 @@ export const getTemplateFields = async (db, organisationId, templateId) => {
     ORDER BY dtf.display_order;
   `;
 
-  const result = await db.query(query, [organisationId, templateId]);
+  const result = await db.query(
+    query,
+    [
+      organisationId,
+      templateId,
+    ],
+  );
 
   return result.rows;
 };
 
-export const getTemplate = async (db, organisationId, templateId) => {
+// ============================================================
+// GET TEMPLATE
+// ============================================================
+
+export const getTemplate = async (
+  db,
+  organisationId,
+  templateId,
+) => {
   const query = `
     SELECT
       dt.template_id AS id,
@@ -195,12 +717,25 @@ export const getTemplate = async (db, organisationId, templateId) => {
     LIMIT 1;
   `;
 
-  const result = await db.query(query, [organisationId, templateId]);
+  const result = await db.query(
+    query,
+    [
+      organisationId,
+      templateId,
+    ],
+  );
 
   return result.rows[0];
 };
 
-export const getModules = async (db, organisationId) => {
+// ============================================================
+// GET MODULES
+// ============================================================
+
+export const getModules = async (
+  db,
+  organisationId,
+) => {
   const query = `
     SELECT
       dt.template_id,
@@ -214,12 +749,23 @@ export const getModules = async (db, organisationId) => {
     ORDER BY tt.template_name;
   `;
 
-  const result = await db.query(query, [organisationId]);
+  const result = await db.query(
+    query,
+    [organisationId],
+  );
 
   return result.rows;
 };
 
-export const getTemplateDetails = async (db, organisationId, templateId) => {
+// ============================================================
+// GET TEMPLATE DETAILS
+// ============================================================
+
+export const getTemplateDetails = async (
+  db,
+  organisationId,
+  templateId,
+) => {
   const query = `
     SELECT
       dt.template_id,
@@ -234,104 +780,257 @@ export const getTemplateDetails = async (db, organisationId, templateId) => {
     LIMIT 1;
   `;
 
-  const result = await db.query(query, [organisationId, templateId]);
+  const result = await db.query(
+    query,
+    [
+      organisationId,
+      templateId,
+    ],
+  );
 
   return result.rows[0];
 };
+
+// ============================================================
+// INSERT FACE DETAILS
+//
+// Supports:
+//
+// [
+//   [512 values],
+//   [512 values],
+//   [512 values],
+//   [512 values],
+//   [512 values]
+// ]
+//
+// Each vector is stored as a separate database row.
+// ============================================================
 
 export const insertFaceDetails = async (
   db,
   schema,
   tableName,
   recordId,
-  faceDescriptor,
+  faceDescriptors,
 ) => {
-  const query = `
-    INSERT INTO "${schema}".face_details (
-      table_name,
-      record_id,
-      face_descriptor
-    )
-    VALUES ($1, $2, $3::vector)
-    RETURNING *;
-  `;
+  let vectors;
 
-  const result = await db.query(query, [
-    tableName,
-    recordId,
-    toVector(faceDescriptor),
-  ]);
+  // ----------------------------------------------------------
+  // New format
+  // ----------------------------------------------------------
 
-  return result.rows[0];
+  if (
+    Array.isArray(faceDescriptors) &&
+    Array.isArray(faceDescriptors[0])
+  ) {
+    vectors = faceDescriptors;
+  } else {
+    // --------------------------------------------------------
+    // Backward compatibility
+    // --------------------------------------------------------
+
+    vectors = [
+      faceDescriptors,
+    ];
+  }
+
+  // ----------------------------------------------------------
+  // Validate number of vectors
+  // ----------------------------------------------------------
+
+  if (vectors.length === 0) {
+    throw new Error(
+      "No face vectors provided.",
+    );
+  }
+
+  if (vectors.length > 5) {
+    throw new Error(
+      `Maximum 5 face vectors allowed, received ${vectors.length}.`,
+    );
+  }
+
+  // ----------------------------------------------------------
+  // Validate every vector
+  // ----------------------------------------------------------
+
+  for (
+    let i = 0;
+    i < vectors.length;
+    i++
+  ) {
+    const vector = vectors[i];
+
+    if (!Array.isArray(vector)) {
+      throw new Error(
+        `Face vector ${i + 1} is invalid.`,
+      );
+    }
+
+    if (vector.length !== 512) {
+      throw new Error(
+        `Face vector ${
+          i + 1
+        } expected 512 dimensions, received ${vector.length}.`,
+      );
+    }
+
+    const invalidValue = vector.some(
+      (value) =>
+        typeof value !== "number" ||
+        !Number.isFinite(value),
+    );
+
+    if (invalidValue) {
+      throw new Error(
+        `Face vector ${
+          i + 1
+        } contains invalid numeric values.`,
+      );
+    }
+  }
+
+  // ----------------------------------------------------------
+  // Insert vectors
+  // ----------------------------------------------------------
+
+  const insertedRows = [];
+
+  for (
+    let i = 0;
+    i < vectors.length;
+    i++
+  ) {
+    const query = `
+      INSERT INTO "${schema}".face_details (
+        table_name,
+        record_id,
+        face_descriptor
+      )
+      VALUES (
+        $1,
+        $2,
+        $3::vector
+      )
+      RETURNING *;
+    `;
+
+    const result = await db.query(
+      query,
+      [
+        tableName,
+        recordId,
+        toVector(vectors[i]),
+      ],
+    );
+
+    insertedRows.push(
+      result.rows[0],
+    );
+  }
+
+  console.log(
+    `Inserted ${insertedRows.length} face vectors for record ${recordId}`,
+  );
+
+  return insertedRows;
 };
+
+// ============================================================
+// UPDATE FACE DETAILS
+//
+// Deletes existing vectors and inserts new vectors.
+// ============================================================
 
 export const updateFaceDetails = async (
   db,
   schema,
   tableName,
   recordId,
-  faceDescriptor,
+  faceDescriptors,
 ) => {
-  const query = `
-    UPDATE "${schema}".face_details
-    SET
-      face_descriptor = $3::vector,
-      updated_at = NOW()
-    WHERE
-      table_name = $1
-      AND record_id = $2
-    RETURNING *;
-  `;
+  // Delete existing vectors
+  await db.query(
+    `
+      DELETE FROM "${schema}".face_details
+      WHERE table_name = $1
+        AND record_id = $2;
+    `,
+    [
+      tableName,
+      recordId,
+    ],
+  );
 
-  const result = await db.query(query, [
+  // Insert new vectors
+  return await insertFaceDetails(
+    db,
+    schema,
     tableName,
     recordId,
-    toVector(faceDescriptor),
-  ]);
-
-  return result.rows[0];
+    faceDescriptors,
+  );
 };
 
-export const deleteFaceDetails = async (db, schema, tableName, recordId) => {
+// ============================================================
+// DELETE FACE DETAILS
+// ============================================================
+
+export const deleteFaceDetails = async (
+  db,
+  schema,
+  tableName,
+  recordId,
+) => {
   const query = `
     DELETE FROM "${schema}".face_details
-    WHERE
-      table_name = $1
+    WHERE table_name = $1
       AND record_id = $2
     RETURNING *;
   `;
 
-  const result = await db.query(query, [tableName, recordId]);
+  const result = await db.query(
+    query,
+    [
+      tableName,
+      recordId,
+    ],
+  );
 
-  return result.rows[0];
+  return result.rows;
 };
 
-// export const getFaceDetails = async (db, schema) => {
-//   const query = `
-//     SELECT
-//       table_name,
-//       record_id,
-//       face_descriptor
-//     FROM "${schema}".face_details;
-//   `;
+// ============================================================
+// GET ALL FACE DETAILS
+// ============================================================
 
-//   const result = await db.query(query);
-//   return result.rows;
-// };
-
-export const getFaceDetails = async (db, schema) => {
+export const getFaceDetails = async (
+  db,
+  schema,
+) => {
   const query = `
     SELECT
+      id,
       table_name,
       record_id,
       face_descriptor
-    FROM "${schema}".face_details;
+    FROM "${schema}".face_details
+    ORDER BY record_id, id;
   `;
 
-  const result = await db.query(query);
+  const result = await db.query(
+    query,
+  );
 
-  return result.rows.map((row) => ({
-    ...row,
-    face_descriptor: fromVector(row.face_descriptor),
-  }));
+  return result.rows.map(
+    (row) => ({
+      ...row,
+      face_descriptor:
+        fromVector(
+          row.face_descriptor,
+        ),
+    }),
+  );
 };
+
