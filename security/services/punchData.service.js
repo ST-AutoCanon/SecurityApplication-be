@@ -370,6 +370,8 @@ export const confirmPunchService = async (
     // console.log("data:", data);
     console.log("user:", user);
     console.log("user.full_name:", user?.full_name);
+        console.log("apartment_number:", data?.apartment_number);
+        console.log("vehicle_number:", data?.vehicle_number);
     console.log("==========================================");
 
     if (!user) {
@@ -426,6 +428,11 @@ export const confirmPunchService = async (
       distance: data.distance ?? 0,
 
       punch_type: punchType,
+
+      // Voice-only fields
+      apartment_number: data.apartment_number,
+      vehicle_number: data.vehicle_number,
+
     });
 
     console.log("Punch inserted:", punch);
@@ -453,6 +460,9 @@ export const confirmPunchService = async (
         distance: data.distance ?? 0,
 
         punch_type: punchType,
+        apartment_number: data.apartment_number || "",
+
+        vehicle_number: data.vehicle_number || "",
       },
     };
   } catch (err) {

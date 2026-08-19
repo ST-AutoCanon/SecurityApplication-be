@@ -99,6 +99,44 @@ export const getLastPunch = async (
 // INSERT PUNCH LOG
 // ============================================================
 
+// export const insertPunchLog = async (
+//   db,
+//   schema,
+//   data,
+// ) => {
+//   const query = `
+//     INSERT INTO "${schema}".punch_logs
+//     (
+//       table_name,
+//       user_id,
+//       full_name,
+//       distance,
+//       punch_type
+//     )
+//     VALUES ($1, $2, $3, $4, $5)
+//     RETURNING *;
+//   `;
+
+//   const values = [
+//     data.table_name,
+//     data.user_id,
+//     data.full_name,
+//     data.distance,
+//     data.punch_type,
+//   ];
+
+//   const result = await db.query(
+//     query,
+//     values,
+//   );
+
+//   return result.rows[0];
+// };
+
+// ============================================================
+// INSERT PUNCH LOG
+// ============================================================
+
 export const insertPunchLog = async (
   db,
   schema,
@@ -111,9 +149,11 @@ export const insertPunchLog = async (
       user_id,
       full_name,
       distance,
-      punch_type
+      punch_type,
+      apartment_number,
+      vehicle_number
     )
-    VALUES ($1, $2, $3, $4, $5)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *;
   `;
 
@@ -123,6 +163,8 @@ export const insertPunchLog = async (
     data.full_name,
     data.distance,
     data.punch_type,
+    data.apartment_number,
+    data.vehicle_number,
   ];
 
   const result = await db.query(
