@@ -215,6 +215,8 @@ export const confirmPunch = async (req, res) => {
       full_name,
       distance,
       photo,
+      apartment_number,
+      vehicle_number,
     } = req.body;
 
     // ----------------------------------------------------------
@@ -236,17 +238,18 @@ export const confirmPunch = async (req, res) => {
     // ----------------------------------------------------------
     // Confirm punch
     // ----------------------------------------------------------
-    const result =
-      await confirmPunchService(
-        organisationId,
-        user_id,
-        table_name,
-        {
-          full_name,
-          distance,
-          photo,
-        },
-      );
+    const result = await confirmPunchService(
+      organisationId,
+      user_id,
+      table_name,
+      {
+        full_name,
+        distance,
+        photo,
+        apartment_number,
+        vehicle_number,
+      },
+    );
 
     return res.json(result);
   } catch (err) {
