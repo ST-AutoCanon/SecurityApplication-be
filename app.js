@@ -6,8 +6,15 @@ import path from "path";
 import orgSuperAdminRoutes from "./auth/routes/organisationSuperAdmin.routes.js";
 
 import authRoutes from "./auth/routes/auth.routes.js";
-import orgroutes from "./auth/routes/organisation.routes.js"
+import orgroutes from "./auth/routes/organisation.routes.js";
+
+//////////formifyroutes/////////
 import formsRoutes from "./security/routes/forms.routes.js";
+///////// campaignroutes///////////
+import campaignRoutes from "./security/routes/campaign.routes.js";
+import campaignBlockRoutes from "./security/routes/campaign.blockroutes.js";
+import uploadRoutes from "./security/routes/upload.routes.js";
+//////////////////////////////////////
 
 
 import dynamicDataRoutes from "./security/routes/dynamicData.routes.js";
@@ -79,7 +86,14 @@ app.use("/dynamic-tables", dynamicTableRoutes);
 app.use("/api/organisation", orgroutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/org-super-admin", orgSuperAdminRoutes);
+
+///////formify routes////////////
 app.use("/api/forms", formsRoutes);
+///////////////////campaign routes////////
+app.use("/api/campaigns", campaignRoutes);
+app.use("/api/campaigns", campaignBlockRoutes);
+app.use("/api/upload", uploadRoutes); 
+
 
 
 // security routes
