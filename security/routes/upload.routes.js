@@ -10,7 +10,7 @@ const router = express.Router();
 router.use(auth);
 
 // ===================== CREATE UPLOAD FOLDER =====================
-const uploadDir = path.join(process.cwd(), "uploads", "campaigns");
+const uploadDir = path.join(process.cwd(), "security", "uploads", "campaigns");
 
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
