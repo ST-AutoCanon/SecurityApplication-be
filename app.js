@@ -20,6 +20,10 @@ import punchdata from "./security/routes/punchData.routes.js";
 import adminRoutes from "./auth/routes/admin.routes.js";
 import apartmentRoutes from "./apartment/routes/apartmentMember.routes.js";
 import dynamicTableRoutes from "./auth/routes/dynamicTable.routes.js";
+
+import assignGatesRoutes from "./auth/routes/assignGates.routes.js";
+
+
 const app = express();
 
 // CORS
@@ -88,9 +92,8 @@ app.use("/dynamic-data", dynamicDataRoutes);
 app.use("/punch-data", punchdata);
 
 
-
-
 app.use("/api/admin", adminRoutes);
+app.use("/api/admin", assignGatesRoutes);
 
 app.use("/api/admin/apartment", apartmentRoutes);
 // =========================
