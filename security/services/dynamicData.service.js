@@ -243,14 +243,36 @@ export const createRecordService = async (
         templateId,
       );
 
+    
+    // --------------------------------------------------------
+// STATUS DEFAULT
+//
+// If this template contains a status field and the caller
+// did not provide status, use the field's default value.
+// --------------------------------------------------------
+
+const statusField = allowedFields.find(
+  (field) => field.field_key === "status",
+);
+
+const payloadWithDefaults = {
+  ...(payload || {}),
+};
+
+if (
+  statusField &&
+  payloadWithDefaults.status === undefined
+) {
+  payloadWithDefaults.status =
+    statusField.default_value || "Active";
+    }
+    
     // --------------------------------------------------------
     // STEP 3: Separate Face Descriptor
     // --------------------------------------------------------
 
-    const {
-      dynamicPayload,
-      faceDescriptor: rawFaceDescriptor,
-    } = separateFaceDescriptor(payload);
+    const { dynamicPayload, faceDescriptor: rawFaceDescriptor } =
+      separateFaceDescriptor(payloadWithDefaults);
 
     // --------------------------------------------------------
     // STEP 4: Normalize + Validate Face Descriptor
@@ -874,6 +896,30 @@ export const getTemplateMetadataService =
           organisationId,
           templateId,
         );
+      
+      
+      
+       console.log("🔥 GET TEMPLATE METADATA - ALL FIELDS FROM MODEL:", fields);
+
+       // Hide status only from API response
+       const visibleFields = fields.filter(
+         (field) => field.field_key !== "status",
+       );
+
+       console.log(
+         "🔥 GET TEMPLATE METADATA - FIELDS AFTER HIDING STATUS:",
+         visibleFields,
+       );
+
+       console.log(
+         "🔥 GET TEMPLATE METADATA - STATUS STILL EXISTS IN MODEL:",
+         fields.some((field) => field.field_key === "status"),
+       );
+
+       console.log(
+         "🔥 GET TEMPLATE METADATA - STATUS IN RESPONSE:",
+         visibleFields.some((field) => field.field_key === "status"),
+       );
 
       return {
         success: true,
@@ -883,7 +929,7 @@ export const getTemplateMetadataService =
             template.template_name,
           displayName:
             template.display_name,
-          fields,
+          fields: visibleFields,
         },
       };
     } catch (err) {
@@ -991,12 +1037,28 @@ export const getModuleDetailsService =
           organisationId,
           templateId,
         );
+      
+    console.log("🔥 GET MODULE DETAILS - ALL FIELDS FROM MODEL:", fields);
+
+    const visibleFields = fields.filter(
+      (field) => field.field_key !== "status",
+    );
+
+    console.log(
+      "🔥 GET MODULE DETAILS - FIELDS AFTER HIDING STATUS:",
+      visibleFields,
+    );
+
+    console.log(
+      "🔥 GET MODULE DETAILS - STATUS IN RESPONSE:",
+      visibleFields.some((field) => field.field_key === "status"),
+    );
 
       return {
         success: true,
         data: {
           ...template,
-          fields,
+          fields: visibleFields,
         },
       };
     } catch (err) {

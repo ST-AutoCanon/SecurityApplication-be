@@ -467,7 +467,7 @@ export const updateDynamicTableService = async (payload) => {
 
     return {
       success: true,
-      message: "Dynamic table updated successfully",
+      message: "Dynamic Form updated successfully",
       addedFields,
       removedFields,
       skippedFields: payload.fields.filter((f) => !addedFields.includes(f)),
