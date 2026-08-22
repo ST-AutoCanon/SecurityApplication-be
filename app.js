@@ -32,6 +32,7 @@ import assignGatesRoutes from "./auth/routes/assignGates.routes.js";
 
 
 const app = express();
+app.set("trust proxy", 1);
 
 // CORS
 app.use(
