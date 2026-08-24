@@ -1,141 +1,4 @@
-// // // import express from "express";
-// // // import {
-// // //   getForms,
-// // //   getForm,
-// // //   createForm,
-// // //   updateForm,
-// // //   deleteForm,
-// // // } from "../controllers/forms.controller.js";
-// // // import { auth } from "../../middleware/auth.js";
 
-// // // const router = express.Router();
-
-
-
-// // // // Require login
-// // // router.use(auth);
-
-// // // router.get("/", getForms);
-// // // router.get("/:id", getForm);
-// // // router.post("/", createForm);
-// // // router.put("/:id", updateForm);
-// // // router.delete("/:id", deleteForm);
-
-// // // export default router;
-
-
-// // import express from "express";
-// // import {
-// //   getForms,
-// //   getForm,
-// //   createForm,
-// //   updateForm,
-// //   deleteForm,
-// //   getPublicForm,
-// //   submitPublicForm,
-// //   getFormResponses, // ← add
-// // } from "../controllers/forms.controller.js";
-// // import { auth } from "../../middleware/auth.js";
-
-// // const router = express.Router();
-// // // or whatever the correct relative path is to the file you just showed me
-
-// // router.post("/forms/:id/send-email", auth, async (req, res) => {
-// //   try {
-// //     const { email, formUrl, formTitle } = req.body;
-// //     const formId = req.params.id;
-
-// //     // TODO: Add your email sending logic here (Nodemailer / Resend / etc.)
-
-// //     res.json({
-// //       success: true,
-// //       message: "Email sent successfully",
-// //     });
-// //   } catch (error) {
-// //     console.error(error);
-// //     res.status(500).json({
-// //       success: false,
-// //       message: "Failed to send email",
-// //     });
-// //   }
-// // });
-// // // PUBLIC (no login)
-// // router.get("/public/:orgId/:formId", getPublicForm);
-// // router.post("/public/:orgId/:formId/submit", submitPublicForm);
-
-// // // PROTECTED
-// // router.use(auth);
-
-// // router.get("/", getForms);
-// // router.get("/:id", getForm);
-// // router.post("/", createForm);
-// // router.put("/:id", updateForm);
-// // router.get("/:id/responses", getFormResponses); // ← add BEFORE /:id
-// // router.delete("/:id", deleteForm);
-
-// // export default router;
-
-// import express from "express";
-// import {
-//   getForms,
-//   getForm,
-//   createForm,
-//   updateForm,
-//   deleteForm,
-//   getPublicForm,
-//   submitPublicForm,
-//   getFormResponses,
-// } from "../controllers/forms.controller.js";
-// import { auth } from "../../middleware/auth.js";
-
-// const router = express.Router();
-
-// // ===================== PUBLIC (no login) =====================
-// router.get("/public/:orgId/:formId", getPublicForm);
-// router.post("/public/:orgId/:formId/submit", submitPublicForm);
-
-// // ===================== PROTECTED =====================
-// router.use(auth);
-
-// router.get("/", getForms);
-// router.get("/:id", getForm);
-// router.post("/", createForm);
-// router.put("/:id", updateForm);
-// router.get("/:id/responses", getFormResponses);
-// router.delete("/:id", deleteForm);
-
-// // Send form link via email
-// router.post("/:id/send-email", async (req, res) => {
-//   try {
-//     const { email, formUrl, formTitle } = req.body;
-//     const formId = req.params.id;
-
-//     if (!email || !formUrl) {
-//       return res.status(400).json({
-//         success: false,
-//         message: "Email and formUrl are required",
-//       });
-//     }
-
-//     // TODO: Add real email sending logic here (Nodemailer / Resend / etc.)
-//     console.log("Sending form to:", email);
-//     console.log("Form URL:", formUrl);
-//     console.log("Form Title:", formTitle);
-
-//     res.json({
-//       success: true,
-//       message: "Email sent successfully",
-//     });
-//   } catch (error) {
-//     console.error("Send email error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Failed to send email",
-//     });
-//   }
-// });
-
-// export default router;
 
 import express from "express";
 import nodemailer from "nodemailer";
@@ -152,6 +15,87 @@ import {
 import { auth } from "../../middleware/auth.js";
 
 const router = express.Router();
+
+// ===================== FILE UPLOAD =====================
+router.post("/upload-image", async (req, res) => {
+  try {
+    const { upload } = await import("../middleware/upload.js");
+    const uploadSingle = upload.single("image");
+
+    uploadSingle(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          success: false,
+          message: err.message || "Image upload failed",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No image uploaded",
+        });
+      }
+
+      const forwardedProto = req.get("x-forwarded-proto") || req.protocol;
+      const forwardedHost = req.get("x-forwarded-host") || req.get("host");
+      const baseUrl = (process.env.PUBLIC_URL || `${forwardedProto}://${forwardedHost}`)
+        .replace(/\/+$/, "");
+
+      return res.status(200).json({
+        success: true,
+        message: "Image uploaded successfully",
+        url: `${baseUrl}/uploads/${req.file.filename}`,
+        filename: req.file.filename,
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Upload failed",
+    });
+  }
+});
+
+router.post("/public/:orgId/:formId/upload-image", async (req, res) => {
+  try {
+    const { upload } = await import("../middleware/upload.js");
+    const uploadSingle = upload.single("image");
+
+    uploadSingle(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          success: false,
+          message: err.message || "Image upload failed",
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "No image uploaded",
+        });
+      }
+
+      const forwardedProto = req.get("x-forwarded-proto") || req.protocol;
+      const forwardedHost = req.get("x-forwarded-host") || req.get("host");
+      const baseUrl = (process.env.PUBLIC_URL || `${forwardedProto}://${forwardedHost}`)
+        .replace(/\/+$/, "");
+
+      return res.status(200).json({
+        success: true,
+        message: "Image uploaded successfully",
+        url: `${baseUrl}/uploads/${req.file.filename}`,
+        filename: req.file.filename,
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Upload failed",
+    });
+  }
+});
 
 // ===================== EMAIL TRANSPORTER =====================
 const transporter = nodemailer.createTransport({
