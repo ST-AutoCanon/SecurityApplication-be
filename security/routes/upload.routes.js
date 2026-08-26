@@ -67,7 +67,7 @@ router.post("/image", upload.single("image"), (req, res) => {
     const baseUrl = (process.env.PUBLIC_URL || `${forwardedProto}://${forwardedHost}`)
       .replace(/\/+$/, "");
 
-    const url = `${baseUrl}/uploads/campaigns/${req.file.filename}`;
+    const url = `${baseUrl}/api/uploads/campaigns/${req.file.filename}`;
 
     return res.status(200).json({
       success: true,

@@ -45,7 +45,7 @@ router.post("/upload-image", async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Image uploaded successfully",
-        url: `${baseUrl}/uploads/${req.file.filename}`,
+        url: `${baseUrl}/api/uploads/${req.file.filename}`,
         filename: req.file.filename,
       });
     });
@@ -85,7 +85,7 @@ router.post("/public/:orgId/:formId/upload-image", async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Image uploaded successfully",
-        url: `${baseUrl}/uploads/${req.file.filename}`,
+        url: `${baseUrl}/api/uploads/${req.file.filename}`,
         filename: req.file.filename,
       });
     });
@@ -176,7 +176,7 @@ router.delete("/:id", deleteForm);
 // });
 router.post("/:id/send-email", async (req, res) => {
   try {
-    let { emails, email, formUrl, formTitle } = req.body;
+    let { emails, email, formUrl, formTitle, fields } = req.body;
 
     // Support both single email and array of emails
     if (!emails && email) {
@@ -202,31 +202,47 @@ router.post("/:id/send-email", async (req, res) => {
       });
     }
 
+    const referenceFields = Array.isArray(fields)
+      ? fields.filter((field) => field && field.referenceUrl)
+      : [];
+
+    const referenceImageHtml = referenceFields.length
+      ? referenceFields
+          .map(
+            (field) => `
+              <div style="margin-top: 18px; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #f8fafc;">
+                <div style="padding: 10px 12px; font-size: 13px; font-weight: 700; color: #334155; background: #f1f5f9;">
+                  ${field.label || "Reference image"}
+                </div>
+                <img src="${field.referenceUrl}" alt="${field.label || "Reference image"}" style="display:block; width:100%; max-height:260px; object-fit:cover;" />
+              </div>
+            `
+          )
+          .join("")
+      : "";
+
     // Send to all emails
     await transporter.sendMail({
       from: `"Form Builder" <${process.env.MAIL_USER}>`,
       to: emails.join(", "), // or use bcc: emails.join(", ") if you prefer
       subject: `Please fill this form: ${formTitle || "Untitled Form"}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; padding: 20px;">
-          <h2 style="color: #7c3aed;">Hello,</h2>
-          <p>You have been invited to fill out a form:</p>
-          <p style="font-size: 18px; font-weight: bold;">${formTitle || "Untitled Form"}</p>
-          
+        <div style="font-family: Arial, sans-serif; max-width: 700px; padding: 20px;">
+          <h2 style="color: #7c3aed; margin: 0 0 12px;">Hello,</h2>
+          <p style="margin: 0 0 12px; color: #334155;">You have been invited to fill out a form:</p>
+          <p style="font-size: 18px; font-weight: bold; margin: 0 0 18px; color: #111827;">${formTitle || "Untitled Form"}</p>
+
           <a href="${formUrl}" 
-             style="display: inline-block; margin: 20px 0; padding: 14px 28px; 
+             style="display: inline-block; margin: 0 0 18px; padding: 14px 28px; 
                     background-color: #7c3aed; color: white; text-decoration: none; 
                     border-radius: 8px; font-weight: bold;">
             Open Form
           </a>
+
           
-          <p style="color: #666; font-size: 14px;">
-            Or copy and paste this link into your browser:<br>
-            <a href="${formUrl}">${formUrl}</a>
-          </p>
-          
+
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
-          <p style="color: #999; font-size: 12px;">
+          <p style="color: #999; font-size: 12px; margin: 0;">
             This is an automated message. Please do not reply.
           </p>
         </div>
