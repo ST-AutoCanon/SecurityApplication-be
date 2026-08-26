@@ -103,8 +103,11 @@ function buildEmailHtml(blocks) {
       }
     }
 
-    switch (block.block_type) {
-      case "logo":
+    // accept both snake_case and camelCase from DB
+    const type = block.block_type || block.blockType;
+
+    switch (type) {
+           case "logo":
         if (content.url) {
           body += `
             <div style="text-align:center;margin-bottom:20px;">

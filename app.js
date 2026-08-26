@@ -79,7 +79,10 @@ app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "security", "uploads")),
 );
-
+app.use(
+  "/api/uploads",
+  express.static(path.join(process.cwd(), "security", "uploads")),
+);
 // =========================
 // Security Module Routes
 // =========================
