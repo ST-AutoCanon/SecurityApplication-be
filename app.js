@@ -29,6 +29,7 @@ import apartmentRoutes from "./apartment/routes/apartmentMember.routes.js";
 import dynamicTableRoutes from "./auth/routes/dynamicTable.routes.js";
 
 import assignGatesRoutes from "./auth/routes/assignGates.routes.js";
+import AdminDashboardRoutes from "./auth/routes/AdmindashboardRoutes.js";
 
 
 const app = express();
@@ -112,6 +113,7 @@ app.use("/punch-data", punchdata);
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", assignGatesRoutes);
+app.use("/api/admin/dashboard", AdminDashboardRoutes);
 
 app.use("/api/admin/apartment", apartmentRoutes);
 // =========================
