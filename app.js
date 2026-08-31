@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
-
+import fs from "fs";
 import orgSuperAdminRoutes from "./auth/routes/organisationSuperAdmin.routes.js";
 
 import authRoutes from "./auth/routes/auth.routes.js";
@@ -75,7 +75,54 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/api/uploads/:filename", (req, res) => {
+  try {
+    const filename = path.basename(req.params.filename); // security - prevent path traversal
+    const filePath = path.join(process.cwd(), "security", "uploads", filename);
 
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: "File not found",
+      });
+    }
+
+    const ext = path.extname(filename).toLowerCase();
+
+    const mimeTypes = {
+      ".pdf": "application/pdf",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".webp": "image/webp",
+      ".gif": "image/gif",
+      ".doc": "application/msword",
+      ".docx":
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ".xls": "application/vnd.ms-excel",
+      ".xlsx":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      ".ppt": "application/vnd.ms-powerpoint",
+      ".pptx":
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      ".txt": "text/plain",
+      ".csv": "text/csv",
+      ".zip": "application/zip",
+    };
+
+    const contentType = mimeTypes[ext] || "application/octet-stream";
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
+    res.sendFile(filePath);
+  } catch (err) {
+    console.error("File serve error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to serve file",
+    });
+  }
+});
 app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "security", "uploads")),

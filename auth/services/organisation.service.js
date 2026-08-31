@@ -6,6 +6,7 @@ import apartmentDB from "../../config/dborgap.js";
 import eventDB from "../../config/dborgevent.js"; // adjust if needed
 import { sendSecurityInvitation } from "../services/mail.service.js";
 import { createSystemTables } from "../utils/createSystemTables.js";
+import { createFixedTables } from "../utils/createFixedTables.js";
 import { createTemplateTables } from "../utils/static_templates/createTemplateTables.js";
 /* ---------------------------
    GET DB BY ORG TYPE
@@ -106,7 +107,7 @@ export const registerOrganisation = async (organisationData, admin) => {
 
     // Create organisation-specific tables
     await createTemplateTables(db, safeSchema, organisation.org_type);
-
+await createFixedTables(db, safeSchema, organisation.org_type);
     /* -----------------------------------
        CREATE SCHEMA IN BUSINESS DB
     ------------------------------------*/
