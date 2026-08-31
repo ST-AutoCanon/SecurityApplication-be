@@ -1,3 +1,4 @@
+
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -24,17 +25,21 @@ const storage = multer.diskStorage({
   },
 });
 
-/* Allow only images */
+/* Allow images + documents */
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|webp/;
+  // Allowed extensions
+  const allowedExtensions = /\.(jpeg|jpg|png|webp|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|csv|zip)$/i;
 
   const ext = path.extname(file.originalname).toLowerCase();
-  const mime = file.mimetype;
 
-  if (allowedTypes.test(ext) && allowedTypes.test(mime)) {
+  if (allowedExtensions.test(ext)) {
     cb(null, true);
   } else {
-    cb(new Error("Only jpeg, jpg, png and webp images are allowed"));
+    cb(
+      new Error(
+        "Only images (JPG, PNG, WEBP) and documents (PDF, DOC, DOCX, XLS, PPT, TXT, CSV, ZIP) are allowed"
+      )
+    );
   }
 };
 
@@ -42,6 +47,6 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize: 15 * 1024 * 1024, // increased to 15MB
   },
 });
