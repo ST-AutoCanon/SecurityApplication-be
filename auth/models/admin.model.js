@@ -121,11 +121,11 @@ export const getTables = async (client, schemaName) => {
     WHERE table_schema = $1
       AND table_type = 'BASE TABLE'
       AND table_schema NOT IN ('public', 'information_schema', 'pg_catalog')
+      AND table_name NOT IN ('assign_gates')
     `,
     [schemaName],
   );
 
-  // console.log("result in gettable model:", result);
   return result.rows;
 };
 
@@ -425,4 +425,76 @@ export const deleteBusinessData = async (client, schemaName, tableName, id) => {
   );
 
   return true;
+};
+
+// user
+
+export const createUser = async (client, organisationId, user) => {
+  const token = crypto.randomBytes(32).toString("hex");
+
+  const result = await client.query(
+    `
+    INSERT INTO auth.users
+    (
+      organisation_id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      password,
+      role,
+      is_active,
+      invitation_token,
+      invitation_expires_at
+    )
+    VALUES
+    (
+      $1,
+      $2,
+      $3,
+      $4,
+      $5,
+      '',
+      $6,
+      true,
+      $7,
+      NOW() + INTERVAL '24 hours'
+    )
+    RETURNING
+      id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      role,
+      is_active,
+      invitation_token,
+      invitation_expires_at;
+    `,
+    [
+      organisationId,
+      user.first_name,
+      user.last_name,
+      user.email,
+      user.phone,
+      user.role,
+      token,
+    ],
+  );
+
+  return result.rows[0];
+};
+
+export const deleteUserById = async (client, organisationId, userId) => {
+  const result = await client.query(
+    `
+    DELETE FROM auth.users
+    WHERE id = $1
+      AND organisation_id = $2
+    RETURNING id;
+    `,
+    [userId, organisationId],
+  );
+
+  return result.rows[0];
 };

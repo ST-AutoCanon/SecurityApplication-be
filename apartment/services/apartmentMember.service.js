@@ -6,7 +6,7 @@ import * as AdminModel from "../../auth/models/admin.model.js";
 import * as MemberModel from "../models/apartmentMember.model.js";
 import * as FamilyModel from "..//models/apartmentFamily.model.js";
 import * as VehicleModel from "../models/apartmentVehicle.model.js";
-
+import { sendSecurityInvitation } from "../../auth/services/mail.service.js";
 /**
  * Get Organisation Schema
  */
@@ -35,85 +35,557 @@ const getSchemaName = async (organisationId) => {
 /**
  * Create Apartment Member
  */
-export const createMemberService = async (organisationId, member) => {
-  const schemaName = await getSchemaName(organisationId);
+// export const createMemberService = async (organisationId, member) => {
+//   const schemaName = await getSchemaName(organisationId);
 
-  const client = await firstDB.connect();
+//   const client = await firstDB.connect();
+
+//   try {
+//     await client.query("BEGIN");
+
+//     const memberCodeExist = await MemberModel.checkMemberCodeExists(
+//       client,
+//       schemaName,
+//       member.member_code,
+//     );
+
+//     if (memberCodeExist) {
+//       await client.query("ROLLBACK");
+
+//       return {
+//         success: false,
+//         message: "Member code already exists",
+//       };
+//     }
+
+//     const mobileExist = await MemberModel.checkMobileExists(
+//       client,
+//       schemaName,
+//       member.mobile_number,
+//     );
+
+//     if (mobileExist) {
+//       await client.query("ROLLBACK");
+
+//       return {
+//         success: false,
+//         message: "Mobile number already exists",
+//       };
+//     }
+
+//     if (member.email) {
+//       const emailExist = await MemberModel.checkEmailExists(
+//         client,
+//         schemaName,
+//         member.email,
+//       );
+
+//       if (emailExist) {
+//         await client.query("ROLLBACK");
+
+//         return {
+//           success: false,
+//           message: "Email already exists",
+//         };
+//       }
+//     }
+
+//     const createdMember = await MemberModel.createApartmentMember(
+//       client,
+//       schemaName,
+//       member,
+//     );
+
+//     await client.query("COMMIT");
+
+//     return {
+//       success: true,
+//       message: "Apartment member created successfully",
+//       data: createdMember,
+//     };
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+
+//     return {
+//       success: false,
+//       message: error.message,
+//     };
+//   } finally {
+//     client.release();
+//   }
+// };
+
+
+
+
+/**
+ * Create Apartment Member
+ *
+ * Flow:
+ * 1. Validate member data in Business DB
+ * 2. Create user in Master Auth DB
+ * 3. Create apartment member in Business DB
+ * 4. Store auth.users.id in apartment_member.security_user_id
+ *
+ * If member creation fails after the auth user is created,
+ * delete the auth user as compensation.
+ */
+
+export const createMemberService = async (
+  organisationId,
+  member,
+) => {
+  /*
+   * =====================================
+   * GET ORGANISATION SCHEMA
+   * =====================================
+   */
+
+  const schemaName =
+    await getSchemaName(organisationId);
+
+
+  /*
+   * =====================================
+   * CONNECT TO BOTH DATABASES
+   * =====================================
+   *
+   * masterClient
+   *   -> master_auth_db
+   *   -> auth.users
+   *
+   * businessClient
+   *   -> securityap / business DB
+   *   -> org_xxx.apartment_member
+   */
+
+  const masterClient =
+    await masterAuthDB.connect();
+
+  const businessClient =
+    await firstDB.connect();
+
+
+  /*
+   * Keep track of created auth user.
+   *
+   * If apartment member creation fails,
+   * we can delete the auth user from master DB.
+   */
+
+  let authUser = null;
+
 
   try {
-    await client.query("BEGIN");
 
-    const memberCodeExist = await MemberModel.checkMemberCodeExists(
-      client,
-      schemaName,
-      member.member_code,
-    );
+    /*
+     * =====================================
+     * START BUSINESS TRANSACTION
+     * =====================================
+     */
+
+    await businessClient.query("BEGIN");
+
+
+    /*
+     * =====================================
+     * CHECK MEMBER CODE
+     * =====================================
+     */
+
+    const memberCodeExist =
+      await MemberModel.checkMemberCodeExists(
+        businessClient,
+        schemaName,
+        member.member_code,
+      );
+
 
     if (memberCodeExist) {
-      await client.query("ROLLBACK");
+
+      await businessClient.query("ROLLBACK");
 
       return {
         success: false,
         message: "Member code already exists",
       };
+
     }
 
-    const mobileExist = await MemberModel.checkMobileExists(
-      client,
-      schemaName,
-      member.mobile_number,
-    );
+
+    /*
+     * =====================================
+     * CHECK MOBILE NUMBER
+     * =====================================
+     */
+
+    const mobileExist =
+      await MemberModel.checkMobileExists(
+        businessClient,
+        schemaName,
+        member.mobile_number,
+      );
+
 
     if (mobileExist) {
-      await client.query("ROLLBACK");
+
+      await businessClient.query("ROLLBACK");
 
       return {
         success: false,
         message: "Mobile number already exists",
       };
+
     }
 
+
+    /*
+     * =====================================
+     * CHECK EMAIL
+     * =====================================
+     */
+
     if (member.email) {
-      const emailExist = await MemberModel.checkEmailExists(
-        client,
-        schemaName,
-        member.email,
-      );
+
+      const emailExist =
+        await MemberModel.checkEmailExists(
+          businessClient,
+          schemaName,
+          member.email,
+        );
+
 
       if (emailExist) {
-        await client.query("ROLLBACK");
+
+        await businessClient.query("ROLLBACK");
 
         return {
           success: false,
           message: "Email already exists",
         };
+
       }
+
     }
 
-    const createdMember = await MemberModel.createApartmentMember(
-      client,
-      schemaName,
-      member,
+
+    /*
+     * =====================================
+     * CREATE AUTH USER
+     * =====================================
+     *
+     * master_auth_db.auth.users
+     *
+     * role = user
+     *
+     * This creates:
+     *
+     * - auth.users.id
+     * - invitation_token
+     * - invitation_expires_at
+     */
+
+    authUser =
+      await AdminModel.createUser(
+        masterClient,
+        organisationId,
+        {
+          first_name: member.first_name,
+
+          last_name: member.last_name,
+
+          email: member.email,
+
+          phone: member.mobile_number,
+
+          role: "user",
+        },
+      );
+
+
+    console.log(
+      "Auth user created:",
+      authUser,
     );
 
-    await client.query("COMMIT");
+
+    /*
+     * =====================================
+     * VALIDATE AUTH USER
+     * =====================================
+     */
+
+    if (!authUser?.id) {
+
+      throw new Error(
+        "Failed to create authentication user",
+      );
+
+    }
+
+
+    /*
+     * =====================================
+     * CREATE APARTMENT MEMBER
+     * =====================================
+     *
+     * security_user_id points to
+     * master_auth_db.auth.users.id
+     */
+
+    const createdMember =
+      await MemberModel.createApartmentMember(
+        businessClient,
+        schemaName,
+        {
+          ...member,
+
+          security_user_id:
+            authUser.id,
+        },
+      );
+
+
+    /*
+     * =====================================
+     * VALIDATE APARTMENT MEMBER
+     * =====================================
+     */
+
+    if (!createdMember?.id) {
+
+      throw new Error(
+        "Failed to create apartment member",
+      );
+
+    }
+
+
+    /*
+     * =====================================
+     * COMMIT BUSINESS DB
+     * =====================================
+     */
+
+    await businessClient.query("COMMIT");
+
+
+    /*
+     * =====================================
+     * SEND INVITATION EMAIL
+     * =====================================
+     *
+     * IMPORTANT:
+     *
+     * Send the email only AFTER the
+     * business transaction has committed.
+     *
+     * Otherwise an email could be sent
+     * even when apartment_member creation
+     * fails.
+     */
+
+    if (
+      authUser.email &&
+      authUser.invitation_token
+    ) {
+
+      console.log(
+        "Preparing invitation email...",
+      );
+
+      console.log(
+        "Email:",
+        authUser.email,
+      );
+
+      console.log(
+        "Token:",
+        authUser.invitation_token,
+      );
+
+
+      try {
+
+        await sendSecurityInvitation({
+          email: authUser.email,
+
+          firstName:
+            authUser.first_name,
+
+          token:
+            authUser.invitation_token,
+        });
+
+
+        console.log(
+          "Invitation email sent successfully:",
+          authUser.email,
+        );
+
+      } catch (mailError) {
+
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT delete the auth user here.
+         *
+         * The database records have already
+         * been successfully created.
+         *
+         * The user can be sent another
+         * invitation later.
+         */
+
+        console.error(
+          "Invitation email failed:",
+          mailError,
+        );
+
+
+        return {
+          success: true,
+
+          message:
+            "Apartment member created successfully, but invitation email could not be sent",
+
+          data: createdMember,
+
+          emailSent: false,
+
+          emailError:
+            mailError.message,
+        };
+
+      }
+
+    } else {
+
+      console.warn(
+        "Invitation email was not sent because email or invitation token is missing",
+      );
+
+    }
+
+
+    /*
+     * =====================================
+     * SUCCESS
+     * =====================================
+     */
 
     return {
       success: true,
-      message: "Apartment member created successfully",
+
+      message:
+        "Apartment member created successfully",
+
       data: createdMember,
+
+      emailSent: true,
     };
+
+
   } catch (error) {
-    await client.query("ROLLBACK");
+
+    /*
+     * =====================================
+     * ROLLBACK BUSINESS DB
+     * =====================================
+     */
+
+    try {
+
+      await businessClient.query(
+        "ROLLBACK",
+      );
+
+    } catch (rollbackError) {
+
+      console.error(
+        "Business DB rollback failed:",
+        rollbackError,
+      );
+
+    }
+
+
+    /*
+     * =====================================
+     * DELETE AUTH USER
+     * =====================================
+     *
+     * Because master_auth_db and business DB
+     * are separate databases, they cannot share
+     * the same normal PostgreSQL transaction.
+     *
+     * If:
+     *
+     * auth.users INSERT -> SUCCESS
+     *
+     * apartment_member INSERT -> FAILED
+     *
+     * then remove auth.users manually.
+     */
+
+    if (authUser?.id) {
+
+      try {
+
+        await AdminModel.deleteUser(
+          masterClient,
+          authUser.id,
+        );
+
+
+        console.log(
+          "Auth user rollback successful:",
+          authUser.id,
+        );
+
+      } catch (deleteError) {
+
+        console.error(
+          "Failed to rollback auth user:",
+          deleteError,
+        );
+
+      }
+
+    }
+
+
+    /*
+     * =====================================
+     * RETURN ERROR
+     * =====================================
+     */
 
     return {
       success: false,
-      message: error.message,
+
+      message:
+        error.message,
     };
+
+
   } finally {
-    client.release();
+
+    /*
+     * =====================================
+     * RELEASE CONNECTIONS
+     * =====================================
+     */
+
+    masterClient.release();
+
+    businessClient.release();
+
   }
 };
+
+
+
 
 /**
  * Get All Members
