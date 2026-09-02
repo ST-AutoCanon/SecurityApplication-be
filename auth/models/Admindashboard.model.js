@@ -36,85 +36,214 @@ export const getRecentVisitors = async (
   purpose = "",
   period = "daily"
 ) => {
+  // ============================================================
+  // 1. DATE FILTER
+  // ============================================================
+
   let dateCondition = "";
 
   switch (period) {
     case "weekly":
       dateCondition = `
-        DATE(punch_time) >= DATE_TRUNC('week', CURRENT_DATE)::date
-        AND DATE(punch_time) <= CURRENT_DATE
+        punch_time >= DATE_TRUNC(
+          'week',
+          CURRENT_DATE
+        )
+        AND punch_time < CURRENT_DATE + INTERVAL '1 day'
       `;
       break;
 
     case "monthly":
       dateCondition = `
-        DATE(punch_time) >= DATE_TRUNC('month', CURRENT_DATE)::date
-        AND DATE(punch_time) <= CURRENT_DATE
+        punch_time >= DATE_TRUNC(
+          'month',
+          CURRENT_DATE
+        )
+        AND punch_time < CURRENT_DATE + INTERVAL '1 day'
       `;
       break;
 
     case "daily":
     default:
       dateCondition = `
-        DATE(punch_time) = CURRENT_DATE
+        punch_time >= CURRENT_DATE
+        AND punch_time < CURRENT_DATE + INTERVAL '1 day'
       `;
       break;
   }
 
+  // ============================================================
+  // 2. QUERY
+  //
+  // IMPORTANT:
+  // Do NOT GROUP BY user_id + DATE anymore.
+  //
+  // Every IN punch becomes a separate visit.
+  // Each IN is paired with the next OUT before another IN.
+  // ============================================================
+
   const query = `
+    WITH filtered_logs AS (
+
+      SELECT
+        user_id,
+        full_name,
+        table_name,
+        punch_type,
+        punch_time
+
+      FROM "${schemaName}".punch_logs
+
+      WHERE
+        ${dateCondition}
+
+        AND punch_time IS NOT NULL
+
+        AND user_id IS NOT NULL
+
+        AND (
+          $1 = ''
+          OR LOWER(full_name) LIKE LOWER('%' || $1 || '%')
+          OR LOWER(table_name) LIKE LOWER('%' || $1 || '%')
+        )
+
+        AND (
+          $2 = ''
+          OR LOWER(table_name) = LOWER($2)
+        )
+    ),
+
+    visits AS (
+
+      SELECT
+        i.user_id,
+        i.full_name,
+        i.table_name,
+
+        DATE(i.punch_time) AS visit_date,
+
+        i.punch_time AS time_in,
+
+        (
+          SELECT MIN(o.punch_time)
+
+          FROM "${schemaName}".punch_logs o
+
+          WHERE
+            o.user_id = i.user_id
+
+            AND LOWER(o.table_name) =
+                LOWER(i.table_name)
+
+            AND UPPER(TRIM(o.punch_type)) = 'OUT'
+
+            AND o.punch_time > i.punch_time
+
+            /*
+             * Make sure this OUT belongs to
+             * this IN session.
+             *
+             * If another IN occurs before the OUT,
+             * this OUT belongs to the later IN.
+             */
+            AND NOT EXISTS (
+
+              SELECT 1
+
+              FROM "${schemaName}".punch_logs next_in
+
+              WHERE
+                next_in.user_id = i.user_id
+
+                AND LOWER(next_in.table_name) =
+                    LOWER(i.table_name)
+
+                AND UPPER(TRIM(next_in.punch_type)) = 'IN'
+
+                AND next_in.punch_time >
+                    i.punch_time
+
+                AND next_in.punch_time <
+                    o.punch_time
+            )
+        ) AS time_out
+
+      FROM filtered_logs i
+
+      WHERE
+        UPPER(TRIM(i.punch_type)) = 'IN'
+    )
+
     SELECT
       user_id,
       full_name,
       table_name,
-      DATE(punch_time) AS visit_date,
+      visit_date,
+      time_in,
+      time_out
 
-      MIN(
-        CASE
-          WHEN punch_type = 'IN'
-          THEN punch_time
-        END
-      ) AS time_in,
-
-      MAX(
-        CASE
-          WHEN punch_type = 'OUT'
-          THEN punch_time
-        END
-      ) AS time_out
-
-    FROM "${schemaName}".punch_logs
-
-    WHERE
-      ${dateCondition}
-
-      AND
-      (
-        $1 = ''
-        OR LOWER(full_name) LIKE LOWER('%' || $1 || '%')
-        OR LOWER(table_name) LIKE LOWER('%' || $1 || '%')
-      )
-
-      AND
-      (
-        $2 = ''
-        OR LOWER(table_name) = LOWER($2)
-      )
-
-    GROUP BY
-      user_id,
-      full_name,
-      table_name,
-      DATE(punch_time)
+    FROM visits
 
     ORDER BY
       visit_date DESC,
       time_in DESC;
   `;
 
-  const result = await client.query(query, [
-    search,
-    purpose,
-  ]);
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "RECENT VISITORS"
+  );
+
+  console.log(
+    "Schema:",
+    schemaName
+  );
+
+  console.log(
+    "Period:",
+    period
+  );
+
+  console.log(
+    "Search:",
+    search
+  );
+
+  console.log(
+    "Purpose:",
+    purpose
+  );
+
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "Recent Visitors Query:",
+    query
+  );
+
+  const result =
+    await client.query(
+      query,
+      [
+        search,
+        purpose,
+      ]
+    );
+
+  console.log(
+    "Recent Visitors Result:",
+    result.rows
+  );
+
+  console.log(
+    "Recent Visitors Count:",
+    result.rows.length
+  );
 
   return result.rows;
 };
@@ -122,10 +251,34 @@ export const getRecentVisitors = async (
 //   client,
 //   schemaName,
 //   search = "",
-//   from = null,
-//   to = null,
-//   purpose = ""
+//   purpose = "",
+//   period = "daily"
 // ) => {
+//   let dateCondition = "";
+
+//   switch (period) {
+//     case "weekly":
+//       dateCondition = `
+//         DATE(punch_time) >= DATE_TRUNC('week', CURRENT_DATE)::date
+//         AND DATE(punch_time) <= CURRENT_DATE
+//       `;
+//       break;
+
+//     case "monthly":
+//       dateCondition = `
+//         DATE(punch_time) >= DATE_TRUNC('month', CURRENT_DATE)::date
+//         AND DATE(punch_time) <= CURRENT_DATE
+//       `;
+//       break;
+
+//     case "daily":
+//     default:
+//       dateCondition = `
+//         DATE(punch_time) = CURRENT_DATE
+//       `;
+//       break;
+//   }
+
 //   const query = `
 //     SELECT
 //       user_id,
@@ -150,27 +303,19 @@ export const getRecentVisitors = async (
 //     FROM "${schemaName}".punch_logs
 
 //     WHERE
+//       ${dateCondition}
+
+//       AND
 //       (
 //         $1 = ''
 //         OR LOWER(full_name) LIKE LOWER('%' || $1 || '%')
+//         OR LOWER(table_name) LIKE LOWER('%' || $1 || '%')
 //       )
 
 //       AND
 //       (
-//         $2::date IS NULL
-//         OR DATE(punch_time) >= $2
-//       )
-
-//       AND
-//       (
-//         $3::date IS NULL
-//         OR DATE(punch_time) <= $3
-//       )
-
-//       AND
-//       (
-//         $4 = ''
-//         OR LOWER(table_name) = LOWER($4)
+//         $2 = ''
+//         OR LOWER(table_name) = LOWER($2)
 //       )
 
 //     GROUP BY
@@ -186,33 +331,8 @@ export const getRecentVisitors = async (
 
 //   const result = await client.query(query, [
 //     search,
-//     from || null,
-//     to || null,
 //     purpose,
 //   ]);
-
-//   return result.rows;
-// };
-// export const getRecentVisitors = async (
-//   client,
-//   schemaName
-// ) => {
-
-//   const result = await client.query(
-//     `
-//     SELECT
-//       id,
-//       table_name,
-//       user_id,
-//       full_name,
-//       distance,
-//       punch_type,
-//       punch_time
-//     FROM "${schemaName}".punch_logs
-//     ORDER BY punch_time DESC
-//     LIMIT 10;
-//     `
-//   );
 
 //   return result.rows;
 // };
