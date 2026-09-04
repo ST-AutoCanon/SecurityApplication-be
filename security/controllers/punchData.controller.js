@@ -217,6 +217,7 @@ export const confirmPunch = async (req, res) => {
       photo,
       apartment_number,
       vehicle_number,
+      gate_name,
     } = req.body;
 
     // ----------------------------------------------------------
@@ -248,6 +249,7 @@ export const confirmPunch = async (req, res) => {
         photo,
         apartment_number,
         vehicle_number,
+        gate_name,
       },
     );
 

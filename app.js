@@ -158,6 +158,9 @@ app.use("/dynamic-data", dynamicDataRoutes);
 app.use("/punch-data", punchdata);
 
 
+// PUBLIC GATES
+app.use("/api", assignGatesRoutes);
+
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", assignGatesRoutes);
 app.use("/api/admin/dashboard", AdminDashboardRoutes);

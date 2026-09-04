@@ -137,11 +137,7 @@ export const getLastPunch = async (
 // INSERT PUNCH LOG
 // ============================================================
 
-export const insertPunchLog = async (
-  db,
-  schema,
-  data,
-) => {
+export const insertPunchLog = async (db, schema, data) => {
   const query = `
     INSERT INTO "${schema}".punch_logs
     (
@@ -151,9 +147,10 @@ export const insertPunchLog = async (
       distance,
       punch_type,
       apartment_number,
-      vehicle_number
+      vehicle_number,
+      gate_name
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING *;
   `;
 
@@ -165,12 +162,10 @@ export const insertPunchLog = async (
     data.punch_type,
     data.apartment_number,
     data.vehicle_number,
+    data.gate_name,
   ];
 
-  const result = await db.query(
-    query,
-    values,
-  );
+  const result = await db.query(query, values);
 
   return result.rows[0];
 };
