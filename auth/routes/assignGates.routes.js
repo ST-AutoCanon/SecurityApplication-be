@@ -7,9 +7,23 @@ import { auth } from "../../middleware/auth.js";
 
 const router = express.Router();
 
-router.use(auth);
+
+/* =========================
+   PUBLIC
+   ========================= */
+
+// // Anyone can fetch gates
+// router.get("/gates", controller.getAssignGates);
+
+
+
 
 /* Admin Only */
+
+router.use(auth);
+
+// Gate list — any authenticated user
+router.get("/gates", controller.getAssignGates);
 
 const adminOnly = (req, res, next) => {
   if (req.user?.role !== "admin") {

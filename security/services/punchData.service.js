@@ -432,7 +432,7 @@ export const confirmPunchService = async (
       // Voice-only fields
       apartment_number: data.apartment_number,
       vehicle_number: data.vehicle_number,
-
+      gate_name: data.gate_name || null,
     });
 
     console.log("Punch inserted:", punch);
@@ -463,6 +463,7 @@ export const confirmPunchService = async (
         apartment_number: data.apartment_number || "",
 
         vehicle_number: data.vehicle_number || "",
+        gate_name: data.gate_name || "",
       },
     };
   } catch (err) {
