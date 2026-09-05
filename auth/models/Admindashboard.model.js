@@ -2015,7 +2015,6 @@ export const getEntriesOverview = async (
   organisationId,
   period = "daily"
 ) => {
-
   /*
    * =====================================================
    * 1. Get organisation schema
@@ -2033,17 +2032,12 @@ export const getEntriesOverview = async (
   );
 
   if (!orgResult.rows.length) {
-    throw new Error(
-      "Organisation not found"
-    );
+    throw new Error("Organisation not found");
   }
 
-  const schemaName =
-    orgResult.rows[0].schema_name;
+  const schemaName = orgResult.rows[0].schema_name;
 
-  const safeSchema =
-    `"${schemaName.replace(/"/g, '""')}"`;
-
+  const safeSchema = `"${schemaName.replace(/"/g, '""')}"`;
 
   /*
    * =====================================================
@@ -2051,132 +2045,255 @@ export const getEntriesOverview = async (
    * =====================================================
    */
 
-  const categoryResult =
-    await authClient.query(
-      `
-        SELECT
-          table_name,
-          display_name,
-          schema_name
-        FROM auth.dynamic_tables
-        WHERE organisation_id = $1
-          AND schema_name = $2
-        ORDER BY created_at ASC
-      `,
-      [
-        organisationId,
-        schemaName,
-      ]
-    );
-
-
- /*
- * =====================================================
- * 3. Create category mapping
- * =====================================================
- *
- * Database controls the category names.
- *
- * Example:
- *
- * table_name   = visitor
- * display_name = Visitors
- *
- * table_name   = vendor
- * display_name = Vendor
- *
- * table_name   = maid
- * display_name = Maid
- *
- * No hardcoded dashboard categories are used.
- */
-
-const categoryMap = new Map();
-
-categoryResult.rows.forEach((row) => {
-  if (!row.table_name) {
-    return;
-  }
-
-  const key = row.table_name
-    .trim()
-    .toLowerCase();
-
-  const label =
-    row.display_name?.trim() ||
-    row.table_name
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (char) =>
-        char.toUpperCase()
-      );
-
-  categoryMap.set(key, label);
-});
+  const categoryResult = await authClient.query(
+    `
+      SELECT
+        table_name,
+        display_name,
+        schema_name
+      FROM auth.dynamic_tables
+      WHERE organisation_id = $1
+        AND schema_name = $2
+      ORDER BY created_at ASC
+    `,
+    [organisationId, schemaName]
+  );
 
   /*
    * =====================================================
-   * 4. Decide time grouping
+   * 3. Create category mapping
+   * =====================================================
+   */
+
+  const categoryMap = new Map();
+
+  categoryResult.rows.forEach((row) => {
+    if (!row.table_name) {
+      return;
+    }
+
+    const key = row.table_name
+      .trim()
+      .toLowerCase();
+
+    const label =
+      row.display_name?.trim() ||
+      row.table_name
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (char) =>
+          char.toUpperCase()
+        );
+
+    categoryMap.set(key, label);
+  });
+
+  /*
+   * =====================================================
+   * 4. Validate period
+   * =====================================================
+   */
+
+  if (!["daily", "weekly", "monthly"].includes(period)) {
+    throw new Error(
+      "Invalid entries overview period"
+    );
+  }
+
+  /*
+   * =====================================================
+   * 5. DAILY
    * =====================================================
    *
-   * Daily
-   * -------
-   * Today grouped by hour
+   * Example:
    *
-   * Weekly
-   * -------
-   * Current week grouped by day
+   * 03:39 PM
+   *      ↓
+   * DATE_TRUNC('hour')
+   *      ↓
+   * 03:00 PM
+   *      ↓
+   * 3 PM–4 PM
    *
-   * Monthly
-   * -------
-   * Current month grouped by day
-   *
+   * We generate all 24 hours so even empty
+   * hours are displayed as 0.
+   */
+
+  if (period === "daily") {
+    const query = `
+      WITH hours AS (
+        SELECT
+          generate_series(
+            DATE_TRUNC('day', CURRENT_DATE),
+            DATE_TRUNC('day', CURRENT_DATE)
+              + INTERVAL '23 hours',
+            INTERVAL '1 hour'
+          ) AS hour_start
+      ),
+
+      entry_data AS (
+        SELECT
+          DATE_TRUNC(
+            'hour',
+            punch_time
+          ) AS hour_start,
+
+          LOWER(
+            TRIM(table_name)
+          ) AS category_key,
+
+          COUNT(*)::int AS total
+
+        FROM ${safeSchema}.punch_logs
+
+        WHERE
+          punch_type IS NOT NULL
+
+          AND UPPER(punch_type) = 'IN'
+
+          AND punch_time >= DATE_TRUNC(
+            'day',
+            CURRENT_DATE
+          )
+
+          AND punch_time < DATE_TRUNC(
+            'day',
+            CURRENT_DATE
+          ) + INTERVAL '1 day'
+
+        GROUP BY
+          DATE_TRUNC(
+            'hour',
+            punch_time
+          ),
+
+          LOWER(
+            TRIM(table_name)
+          )
+      )
+
+      SELECT
+        h.hour_start,
+
+        TO_CHAR(
+          h.hour_start,
+          'FMHH12 AM'
+        )
+        ||
+        '–'
+        ||
+        TO_CHAR(
+          h.hour_start + INTERVAL '1 hour',
+          'FMHH12 AM'
+        ) AS label,
+
+        e.category_key,
+
+        COALESCE(
+          e.total,
+          0
+        )::int AS total
+
+      FROM hours h
+
+      LEFT JOIN entry_data e
+        ON e.hour_start = h.hour_start
+
+      ORDER BY
+        h.hour_start,
+        e.category_key;
+    `;
+
+    console.log(
+      "Entries Overview Daily Query:",
+      query
+    );
+
+    const result =
+      await businessClient.query(query);
+
+    /*
+     * =================================================
+     * Transform daily result
+     * =================================================
+     */
+
+    const transformed = [];
+
+    /*
+     * Create all 24 hours first.
+     */
+
+    result.rows.forEach((row) => {
+      let existing = transformed.find(
+        (item) => item.label === row.label
+      );
+
+      if (!existing) {
+        existing = {
+          label: row.label,
+        };
+
+        transformed.push(existing);
+      }
+
+      /*
+       * Ignore null category generated by
+       * LEFT JOIN when there are no entries.
+       */
+
+      if (!row.category_key) {
+        return;
+      }
+
+      const categoryKey =
+        row.category_key
+          .trim()
+          .toLowerCase();
+
+      const categoryLabel =
+        categoryMap.get(categoryKey);
+
+      /*
+       * Ignore categories which are not
+       * registered for this organisation.
+       */
+
+      if (!categoryLabel) {
+        return;
+      }
+
+      existing[categoryLabel] =
+        Number(row.total || 0);
+    });
+
+    /*
+     * =================================================
+     * Fill missing categories with 0
+     * =================================================
+     */
+
+    transformed.forEach((item) => {
+      categoryMap.forEach((label) => {
+        if (item[label] === undefined) {
+          item[label] = 0;
+        }
+      });
+    });
+
+    return transformed;
+  }
+
+  /*
+   * =====================================================
+   * 6. WEEKLY / MONTHLY
+   * =====================================================
    */
 
   let labelExpression;
   let orderExpression;
   let dateCondition;
 
-
   switch (period) {
-
-    /*
-     * ---------------------------------------------
-     * DAILY
-     * ---------------------------------------------
-     */
-
-    case "daily":
-
-      labelExpression = `
-        TO_CHAR(
-          DATE_TRUNC(
-            'hour',
-            punch_time
-          ),
-          'HH12 AM'
-        )
-      `;
-
-      orderExpression = `
-        DATE_TRUNC(
-          'hour',
-          punch_time
-        )
-      `;
-
-      dateCondition = `
-        DATE(punch_time) = CURRENT_DATE
-      `;
-
-      break;
-
-
-    /*
-     * ---------------------------------------------
-     * WEEKLY
-     * ---------------------------------------------
-     */
-
     case "weekly":
 
       labelExpression = `
@@ -2211,13 +2328,6 @@ categoryResult.rows.forEach((row) => {
       `;
 
       break;
-
-
-    /*
-     * ---------------------------------------------
-     * MONTHLY
-     * ---------------------------------------------
-     */
 
     case "monthly":
 
@@ -2254,26 +2364,16 @@ categoryResult.rows.forEach((row) => {
 
       break;
 
-
     default:
-
       throw new Error(
         "Invalid entries overview period"
       );
   }
 
-
   /*
    * =====================================================
-   * 5. Query punch logs
+   * 7. Weekly / Monthly Query
    * =====================================================
-   *
-   * We count only IN entries.
-   *
-   * The graph represents Entries Overview,
-   * so every successful IN punch becomes
-   * an entry.
-   *
    */
 
   const query = `
@@ -2310,150 +2410,519 @@ categoryResult.rows.forEach((row) => {
       );
   `;
 
-
   console.log(
     "Entries Overview Query:",
     query
   );
 
-
   const result =
-    await businessClient.query(
-      query
-    );
-
+    await businessClient.query(query);
 
   /*
    * =====================================================
-   * 6. Transform result for Recharts
+   * 8. Transform Weekly / Monthly Result
    * =====================================================
    */
 
   const transformed = [];
 
+  result.rows.forEach((row) => {
+    const categoryKey =
+      row.category_key
+        ?.trim()
+        .toLowerCase();
 
-  result.rows.forEach(
-    (row) => {
+    const categoryLabel =
+      categoryMap.get(categoryKey);
 
-      let categoryKey =
-        row.category_key
-          ?.trim()
-          .toLowerCase();
+    /*
+     * Ignore categories not registered
+     * for this organisation.
+     */
 
-
-      /*
-       * Normalize vendor variations
-       */
-
-     
-
-      /*
-       * Find category label
-       */
-
-      const categoryLabel =
-        categoryMap.get(
-          categoryKey
-        );
-
-
-      /*
-       * Ignore categories that are
-       * not registered for organisation
-       */
-
-      if (!categoryLabel) {
-        return;
-      }
-
-
-      /*
-       * Find time bucket
-       */
-
-      let existing =
-        transformed.find(
-          (item) =>
-            item.label ===
-            row.label
-        );
-
-
-      if (!existing) {
-
-        existing = {
-          label: row.label,
-        };
-
-        transformed.push(
-          existing
-        );
-      }
-
-
-      /*
-       * Add category count
-       *
-       * Example:
-       *
-       * {
-       *   label: "12 PM",
-       *   Visitors: 12,
-       *   Guests: 8,
-       *   Members: 4
-       * }
-       */
-
-      existing[
-        categoryLabel
-      ] =
-        Number(
-          row.total || 0
-        );
+    if (!categoryLabel) {
+      return;
     }
-  );
 
-
-  /*
-   * =====================================================
-   * 7. Fill missing categories with 0
-   * =====================================================
-   *
-   * This is important for Recharts.
-   *
-   * If a category has no entry during
-   * a particular time period, we still
-   * return 0.
-   *
-   */
-
-  transformed.forEach(
-    (item) => {
-
-      categoryMap.forEach(
-        (label) => {
-
-          if (
-            item[label] === undefined
-          ) {
-            item[label] = 0;
-          }
-
-        }
+    let existing =
+      transformed.find(
+        (item) =>
+          item.label === row.label
       );
 
-    }
-  );
+    if (!existing) {
+      existing = {
+        label: row.label,
+      };
 
+      transformed.push(existing);
+    }
+
+    existing[categoryLabel] =
+      Number(row.total || 0);
+  });
 
   /*
    * =====================================================
-   * 8. Return result
+   * 9. Fill Missing Categories With 0
    * =====================================================
    */
+
+  transformed.forEach((item) => {
+    categoryMap.forEach((label) => {
+      if (item[label] === undefined) {
+        item[label] = 0;
+      }
+    });
+  });
 
   return transformed;
 };
+// export const getEntriesOverview = async (
+//   businessClient,
+//   authClient,
+//   organisationId,
+//   period = "daily"
+// ) => {
+
+//   /*
+//    * =====================================================
+//    * 1. Get organisation schema
+//    * =====================================================
+//    */
+
+//   const orgResult = await authClient.query(
+//     `
+//       SELECT schema_name
+//       FROM auth.organisations
+//       WHERE id = $1
+//       LIMIT 1
+//     `,
+//     [organisationId]
+//   );
+
+//   if (!orgResult.rows.length) {
+//     throw new Error(
+//       "Organisation not found"
+//     );
+//   }
+
+//   const schemaName =
+//     orgResult.rows[0].schema_name;
+
+//   const safeSchema =
+//     `"${schemaName.replace(/"/g, '""')}"`;
+
+
+//   /*
+//    * =====================================================
+//    * 2. Get dynamic categories
+//    * =====================================================
+//    */
+
+//   const categoryResult =
+//     await authClient.query(
+//       `
+//         SELECT
+//           table_name,
+//           display_name,
+//           schema_name
+//         FROM auth.dynamic_tables
+//         WHERE organisation_id = $1
+//           AND schema_name = $2
+//         ORDER BY created_at ASC
+//       `,
+//       [
+//         organisationId,
+//         schemaName,
+//       ]
+//     );
+
+
+//  /*
+//  * =====================================================
+//  * 3. Create category mapping
+//  * =====================================================
+//  *
+//  * Database controls the category names.
+//  *
+//  * Example:
+//  *
+//  * table_name   = visitor
+//  * display_name = Visitors
+//  *
+//  * table_name   = vendor
+//  * display_name = Vendor
+//  *
+//  * table_name   = maid
+//  * display_name = Maid
+//  *
+//  * No hardcoded dashboard categories are used.
+//  */
+
+// const categoryMap = new Map();
+
+// categoryResult.rows.forEach((row) => {
+//   if (!row.table_name) {
+//     return;
+//   }
+
+//   const key = row.table_name
+//     .trim()
+//     .toLowerCase();
+
+//   const label =
+//     row.display_name?.trim() ||
+//     row.table_name
+//       .replace(/_/g, " ")
+//       .replace(/\b\w/g, (char) =>
+//         char.toUpperCase()
+//       );
+
+//   categoryMap.set(key, label);
+// });
+
+//   /*
+//    * =====================================================
+//    * 4. Decide time grouping
+//    * =====================================================
+//    *
+//    * Daily
+//    * -------
+//    * Today grouped by hour
+//    *
+//    * Weekly
+//    * -------
+//    * Current week grouped by day
+//    *
+//    * Monthly
+//    * -------
+//    * Current month grouped by day
+//    *
+//    */
+
+//   let labelExpression;
+//   let orderExpression;
+//   let dateCondition;
+
+
+//   switch (period) {
+
+//     /*
+//      * ---------------------------------------------
+//      * DAILY
+//      * ---------------------------------------------
+//      */
+
+//     case "daily":
+
+//       labelExpression = `
+//         TO_CHAR(
+//           DATE_TRUNC(
+//             'hour',
+//             punch_time
+//           ),
+//           'HH12 AM'
+//         )
+//       `;
+
+//       orderExpression = `
+//         DATE_TRUNC(
+//           'hour',
+//           punch_time
+//         )
+//       `;
+
+//       dateCondition = `
+//         DATE(punch_time) = CURRENT_DATE
+//       `;
+
+//       break;
+
+
+//     /*
+//      * ---------------------------------------------
+//      * WEEKLY
+//      * ---------------------------------------------
+//      */
+
+//     case "weekly":
+
+//       labelExpression = `
+//         TO_CHAR(
+//           DATE_TRUNC(
+//             'day',
+//             punch_time
+//           ),
+//           'Dy'
+//         )
+//       `;
+
+//       orderExpression = `
+//         DATE_TRUNC(
+//           'day',
+//           punch_time
+//         )
+//       `;
+
+//       dateCondition = `
+//         punch_time >= DATE_TRUNC(
+//           'week',
+//           CURRENT_DATE
+//         )
+
+//         AND
+
+//         punch_time < DATE_TRUNC(
+//           'week',
+//           CURRENT_DATE
+//         ) + INTERVAL '7 days'
+//       `;
+
+//       break;
+
+
+//     /*
+//      * ---------------------------------------------
+//      * MONTHLY
+//      * ---------------------------------------------
+//      */
+
+//     case "monthly":
+
+//       labelExpression = `
+//         TO_CHAR(
+//           DATE_TRUNC(
+//             'day',
+//             punch_time
+//           ),
+//           'DD Mon'
+//         )
+//       `;
+
+//       orderExpression = `
+//         DATE_TRUNC(
+//           'day',
+//           punch_time
+//         )
+//       `;
+
+//       dateCondition = `
+//         punch_time >= DATE_TRUNC(
+//           'month',
+//           CURRENT_DATE
+//         )
+
+//         AND
+
+//         punch_time < DATE_TRUNC(
+//           'month',
+//           CURRENT_DATE
+//         ) + INTERVAL '1 month'
+//       `;
+
+//       break;
+
+
+//     default:
+
+//       throw new Error(
+//         "Invalid entries overview period"
+//       );
+//   }
+
+
+//   /*
+//    * =====================================================
+//    * 5. Query punch logs
+//    * =====================================================
+//    *
+//    * We count only IN entries.
+//    *
+//    * The graph represents Entries Overview,
+//    * so every successful IN punch becomes
+//    * an entry.
+//    *
+//    */
+
+//   const query = `
+//     SELECT
+
+//       ${labelExpression} AS label,
+
+//       LOWER(
+//         TRIM(table_name)
+//       ) AS category_key,
+
+//       COUNT(*)::int AS total
+
+//     FROM ${safeSchema}.punch_logs
+
+//     WHERE
+//       punch_type IS NOT NULL
+
+//       AND UPPER(punch_type) = 'IN'
+
+//       AND ${dateCondition}
+
+//     GROUP BY
+//       ${labelExpression},
+//       ${orderExpression},
+//       LOWER(
+//         TRIM(table_name)
+//       )
+
+//     ORDER BY
+//       ${orderExpression},
+//       LOWER(
+//         TRIM(table_name)
+//       );
+//   `;
+
+
+//   console.log(
+//     "Entries Overview Query:",
+//     query
+//   );
+
+
+//   const result =
+//     await businessClient.query(
+//       query
+//     );
+
+
+//   /*
+//    * =====================================================
+//    * 6. Transform result for Recharts
+//    * =====================================================
+//    */
+
+//   const transformed = [];
+
+
+//   result.rows.forEach(
+//     (row) => {
+
+//       let categoryKey =
+//         row.category_key
+//           ?.trim()
+//           .toLowerCase();
+
+
+//       /*
+//        * Normalize vendor variations
+//        */
+
+     
+
+//       /*
+//        * Find category label
+//        */
+
+//       const categoryLabel =
+//         categoryMap.get(
+//           categoryKey
+//         );
+
+
+//       /*
+//        * Ignore categories that are
+//        * not registered for organisation
+//        */
+
+//       if (!categoryLabel) {
+//         return;
+//       }
+
+
+//       /*
+//        * Find time bucket
+//        */
+
+//       let existing =
+//         transformed.find(
+//           (item) =>
+//             item.label ===
+//             row.label
+//         );
+
+
+//       if (!existing) {
+
+//         existing = {
+//           label: row.label,
+//         };
+
+//         transformed.push(
+//           existing
+//         );
+//       }
+
+
+//       /*
+//        * Add category count
+//        *
+//        * Example:
+//        *
+//        * {
+//        *   label: "12 PM",
+//        *   Visitors: 12,
+//        *   Guests: 8,
+//        *   Members: 4
+//        * }
+//        */
+
+//       existing[
+//         categoryLabel
+//       ] =
+//         Number(
+//           row.total || 0
+//         );
+//     }
+//   );
+
+
+//   /*
+//    * =====================================================
+//    * 7. Fill missing categories with 0
+//    * =====================================================
+//    *
+//    * This is important for Recharts.
+//    *
+//    * If a category has no entry during
+//    * a particular time period, we still
+//    * return 0.
+//    *
+//    */
+
+//   transformed.forEach(
+//     (item) => {
+
+//       categoryMap.forEach(
+//         (label) => {
+
+//           if (
+//             item[label] === undefined
+//           ) {
+//             item[label] = 0;
+//           }
+
+//         }
+//       );
+
+//     }
+//   );
+
+
+//   /*
+//    * =====================================================
+//    * 8. Return result
+//    * =====================================================
+//    */
+
+//   return transformed;
+// };
 export const getEntriesByCategory = async (
   businessClient,
   authClient,
@@ -2817,34 +3286,7 @@ export const getEventContributions = async (
 ) => {
 
   // ============================================================
-  // 1. GET DYNAMIC TABLES FOR CURRENT ORGANISATION
-  // ============================================================
-
-  const dynamicTablesQuery = `
-    SELECT
-      table_name,
-      display_name,
-      schema_name
-    FROM auth.dynamic_tables
-    WHERE organisation_id = $1
-      AND schema_name = $2
-    ORDER BY id;
-  `;
-
-  const dynamicTablesResult = await authClient.query(
-    dynamicTablesQuery,
-    [organisationId, schemaName]
-  );
-
-  const dynamicTables = dynamicTablesResult.rows;
-
-  if (!dynamicTables.length) {
-    return [];
-  }
-
-
-  // ============================================================
-  // 2. DATE CONDITION
+  // 1. DATE CONDITION
   // ============================================================
 
   let dateCondition;
@@ -2875,22 +3317,41 @@ export const getEventContributions = async (
 
 
   // ============================================================
-  // 3. BUILD DYNAMIC UNION QUERY
+  // 2. GET DYNAMIC TABLES
   // ============================================================
 
-  const queries = [];
+  const dynamicTablesQuery = `
+    SELECT
+      table_name,
+      display_name,
+      schema_name
+    FROM auth.dynamic_tables
+    WHERE organisation_id = $1
+      AND schema_name = $2
+    ORDER BY id;
+  `;
+
+  const dynamicTablesResult = await authClient.query(
+    dynamicTablesQuery,
+    [organisationId, schemaName]
+  );
+
+  const dynamicTables = dynamicTablesResult.rows;
+
+  if (!dynamicTables.length) {
+    return [];
+  }
+
+
+  // ============================================================
+  // 3. FETCH EVENT CONTRIBUTORS
+  // ============================================================
+
+  const results = [];
 
   for (const table of dynamicTables) {
 
     const tableName = table.table_name;
-
-    const displayName =
-      table.display_name || table.table_name;
-
-
-    // ----------------------------------------------------------
-    // Basic identifier validation
-    // ----------------------------------------------------------
 
     if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
       continue;
@@ -2914,8 +3375,7 @@ export const getEventContributions = async (
           AND column_name IN (
             'id',
             'full_name',
-            'mobile_number',
-            'status'
+            'mobile_number'
           )
       `,
       [schemaName, tableName]
@@ -2934,155 +3394,69 @@ export const getEventContributions = async (
     }
 
 
-    // ----------------------------------------------------------
-    // Optional columns
-    // ----------------------------------------------------------
-
-    const mobileColumn = columns.includes("mobile_number")
-      ? `"mobile_number"`
-      : "NULL";
-
-    const statusColumn = columns.includes("status")
-      ? `"status"`
-      : "NULL";
+    const hasMobile =
+      columns.includes("mobile_number");
 
 
-    // ----------------------------------------------------------
-    // Dynamic query
-    // ----------------------------------------------------------
-
-    queries.push(`
-      SELECT
-        pl.user_id AS id,
-
-        ${schemaName}.${tableName}."full_name"
-          AS full_name,
-
-        ${mobileColumn}
-          AS mobile_number,
-
-        '${displayName.replace(/'/g, "''")}'
-          AS role,
-
-        MIN(
-          CASE
-            WHEN pl.punch_type = 'IN'
-            THEN pl.punch_time
-          END
-        ) AS working_time,
-
-        CASE
-          WHEN
-            MAX(pl.punch_time) =
-            MAX(
-              CASE
-                WHEN pl.punch_type = 'IN'
-                THEN pl.punch_time
-              END
-            )
-          THEN 'On Duty'
-
-          ELSE 'Off Duty'
-        END AS status
-
-      FROM "${schemaName}".punch_logs pl
-
-      INNER JOIN "${schemaName}"."${tableName}" 
-        ON "${tableName}".id = pl.user_id
-
-      WHERE
-        pl.category = $1
-
-        AND ${dateCondition}
-
-      GROUP BY
-        pl.user_id,
-        ${schemaName}.${tableName}."full_name",
-        ${mobileColumn}
-
-    `);
-  }
+    const mobileColumn = hasMobile
+      ? `t."mobile_number"`
+      : `NULL`;
 
 
-  // ============================================================
-  // 4. NOTHING TO QUERY
-  // ============================================================
-
-  if (!queries.length) {
-    return [];
-  }
-
-
-  // ============================================================
-  // 5. EXECUTE UNION
-  // ============================================================
-
-  const finalQuery = `
-    ${queries.join("\nUNION ALL\n")}
-
-    ORDER BY working_time DESC;
-  `;
-
-
-  // ============================================================
-  // 6. RUN QUERY
-  // ============================================================
-
-  const results = [];
-
-  for (const table of dynamicTables) {
-
-    const tableName = table.table_name;
-
-    if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
-      continue;
-    }
+    // ==========================================================
+    // 4. LATEST PUNCH PER USER
+    // ==========================================================
+    //
+    // IMPORTANT:
+    // This is now the SAME logic used by getSecurityGuards().
+    //
+    // ==========================================================
 
     const query = `
       SELECT
-        pl.user_id AS id,
+        latest.user_id AS id,
         t.full_name,
-        ${
-          table.table_name
-            ? `t.mobile_number`
-            : `NULL`
-        } AS mobile_number,
+        ${mobileColumn} AS mobile_number,
+
         $1 AS role,
 
-        MIN(
-          CASE
-            WHEN pl.punch_type = 'IN'
-            THEN pl.punch_time
-          END
-        ) AS working_time,
+        latest.punch_time AS working_time,
 
         CASE
-          WHEN MAX(pl.punch_time) =
-               MAX(
-                 CASE
-                   WHEN pl.punch_type = 'IN'
-                   THEN pl.punch_time
-                 END
-               )
+          WHEN UPPER(latest.punch_type) = 'IN'
           THEN 'On Duty'
           ELSE 'Off Duty'
         END AS status
 
-      FROM "${schemaName}".punch_logs pl
+      FROM (
+        SELECT
+          pl.user_id,
+          pl.punch_type,
+          pl.punch_time,
+
+          ROW_NUMBER() OVER (
+            PARTITION BY pl.user_id
+            ORDER BY pl.punch_time DESC
+          ) AS rn
+
+        FROM "${schemaName}".punch_logs pl
+
+        WHERE
+          LOWER(pl.table_name) = LOWER($2)
+
+          AND ${dateCondition}
+      ) latest
 
       INNER JOIN "${schemaName}"."${tableName}" t
-        ON t.id = pl.user_id
+        ON t.id = latest.user_id
 
       WHERE
-        LOWER(pl.table_name) = LOWER($2)
+        latest.rn = 1
 
-        AND ${dateCondition}
-
-      GROUP BY
-        pl.user_id,
-        t.full_name,
-        t.mobile_number
+      ORDER BY
+        latest.punch_time DESC;
     `;
+
 
     try {
 
@@ -3108,7 +3482,7 @@ export const getEventContributions = async (
 
 
   // ============================================================
-  // 7. SORT FINAL RESULT
+  // 5. SORT FINAL RESULT
   // ============================================================
 
   results.sort(
@@ -3117,5 +3491,317 @@ export const getEventContributions = async (
       new Date(a.working_time)
   );
 
+
   return results;
 };
+// getEventContributions = async (
+//   client,
+//   authClient,
+//   organisationId,
+//   schemaName,
+//   period = "daily"
+// ) => {
+
+//   // ============================================================
+//   // 1. GET DYNAMIC TABLES FOR CURRENT ORGANISATION
+//   // ============================================================
+
+//   const dynamicTablesQuery = `
+//     SELECT
+//       table_name,
+//       display_name,
+//       schema_name
+//     FROM auth.dynamic_tables
+//     WHERE organisation_id = $1
+//       AND schema_name = $2
+//     ORDER BY id;
+//   `;
+
+//   const dynamicTablesResult = await authClient.query(
+//     dynamicTablesQuery,
+//     [organisationId, schemaName]
+//   );
+
+//   const dynamicTables = dynamicTablesResult.rows;
+
+//   if (!dynamicTables.length) {
+//     return [];
+//   }
+
+
+//   // ============================================================
+//   // 2. DATE CONDITION
+//   // ============================================================
+
+//   let dateCondition;
+
+//   switch (period) {
+
+//     case "weekly":
+//       dateCondition = `
+//         DATE(pl.punch_time) >= DATE_TRUNC('week', CURRENT_DATE)::date
+//         AND DATE(pl.punch_time) <= CURRENT_DATE
+//       `;
+//       break;
+
+//     case "monthly":
+//       dateCondition = `
+//         DATE(pl.punch_time) >= DATE_TRUNC('month', CURRENT_DATE)::date
+//         AND DATE(pl.punch_time) <= CURRENT_DATE
+//       `;
+//       break;
+
+//     case "daily":
+//     default:
+//       dateCondition = `
+//         DATE(pl.punch_time) = CURRENT_DATE
+//       `;
+//       break;
+//   }
+
+
+//   // ============================================================
+//   // 3. BUILD DYNAMIC UNION QUERY
+//   // ============================================================
+
+//   const queries = [];
+
+//   for (const table of dynamicTables) {
+
+//     const tableName = table.table_name;
+
+//     const displayName =
+//       table.display_name || table.table_name;
+
+
+//     // ----------------------------------------------------------
+//     // Basic identifier validation
+//     // ----------------------------------------------------------
+
+//     if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
+//       continue;
+//     }
+
+//     if (!/^[a-zA-Z0-9_]+$/.test(schemaName)) {
+//       throw new Error("Invalid schema name");
+//     }
+
+
+//     // ----------------------------------------------------------
+//     // Check available columns
+//     // ----------------------------------------------------------
+
+//     const columnsResult = await client.query(
+//       `
+//         SELECT column_name
+//         FROM information_schema.columns
+//         WHERE table_schema = $1
+//           AND table_name = $2
+//           AND column_name IN (
+//             'id',
+//             'full_name',
+//             'mobile_number',
+//             'status'
+//           )
+//       `,
+//       [schemaName, tableName]
+//     );
+
+//     const columns = columnsResult.rows.map(
+//       row => row.column_name
+//     );
+
+//     if (!columns.includes("id")) {
+//       continue;
+//     }
+
+//     if (!columns.includes("full_name")) {
+//       continue;
+//     }
+
+
+//     // ----------------------------------------------------------
+//     // Optional columns
+//     // ----------------------------------------------------------
+
+//     const mobileColumn = columns.includes("mobile_number")
+//       ? `"mobile_number"`
+//       : "NULL";
+
+//     const statusColumn = columns.includes("status")
+//       ? `"status"`
+//       : "NULL";
+
+
+//     // ----------------------------------------------------------
+//     // Dynamic query
+//     // ----------------------------------------------------------
+
+//     queries.push(`
+//       SELECT
+//         pl.user_id AS id,
+
+//         ${schemaName}.${tableName}."full_name"
+//           AS full_name,
+
+//         ${mobileColumn}
+//           AS mobile_number,
+
+//         '${displayName.replace(/'/g, "''")}'
+//           AS role,
+
+//         MIN(
+//           CASE
+//             WHEN pl.punch_type = 'IN'
+//             THEN pl.punch_time
+//           END
+//         ) AS working_time,
+
+//         CASE
+//           WHEN
+//             MAX(pl.punch_time) =
+//             MAX(
+//               CASE
+//                 WHEN pl.punch_type = 'IN'
+//                 THEN pl.punch_time
+//               END
+//             )
+//           THEN 'On Duty'
+
+//           ELSE 'Off Duty'
+//         END AS status
+
+//       FROM "${schemaName}".punch_logs pl
+
+//       INNER JOIN "${schemaName}"."${tableName}" 
+//         ON "${tableName}".id = pl.user_id
+
+//       WHERE
+//         pl.category = $1
+
+//         AND ${dateCondition}
+
+//       GROUP BY
+//         pl.user_id,
+//         ${schemaName}.${tableName}."full_name",
+//         ${mobileColumn}
+
+//     `);
+//   }
+
+
+//   // ============================================================
+//   // 4. NOTHING TO QUERY
+//   // ============================================================
+
+//   if (!queries.length) {
+//     return [];
+//   }
+
+
+//   // ============================================================
+//   // 5. EXECUTE UNION
+//   // ============================================================
+
+//   const finalQuery = `
+//     ${queries.join("\nUNION ALL\n")}
+
+//     ORDER BY working_time DESC;
+//   `;
+
+
+//   // ============================================================
+//   // 6. RUN QUERY
+//   // ============================================================
+
+//   const results = [];
+
+//   for (const table of dynamicTables) {
+
+//     const tableName = table.table_name;
+
+//     if (!/^[a-zA-Z0-9_]+$/.test(tableName)) {
+//       continue;
+//     }
+
+//     const query = `
+//       SELECT
+//         pl.user_id AS id,
+//         t.full_name,
+//         ${
+//           table.table_name
+//             ? `t.mobile_number`
+//             : `NULL`
+//         } AS mobile_number,
+//         $1 AS role,
+
+//         MIN(
+//           CASE
+//             WHEN pl.punch_type = 'IN'
+//             THEN pl.punch_time
+//           END
+//         ) AS working_time,
+
+//         CASE
+//           WHEN MAX(pl.punch_time) =
+//                MAX(
+//                  CASE
+//                    WHEN pl.punch_type = 'IN'
+//                    THEN pl.punch_time
+//                  END
+//                )
+//           THEN 'On Duty'
+//           ELSE 'Off Duty'
+//         END AS status
+
+//       FROM "${schemaName}".punch_logs pl
+
+//       INNER JOIN "${schemaName}"."${tableName}" t
+//         ON t.id = pl.user_id
+
+//       WHERE
+//         LOWER(pl.table_name) = LOWER($2)
+
+//         AND ${dateCondition}
+
+//       GROUP BY
+//         pl.user_id,
+//         t.full_name,
+//         t.mobile_number
+//     `;
+
+//     try {
+
+//       const result = await client.query(
+//         query,
+//         [
+//           table.display_name || table.table_name,
+//           table.table_name
+//         ]
+//       );
+
+//       results.push(...result.rows);
+
+//     } catch (err) {
+
+//       console.error(
+//         `Skipping dynamic table ${tableName}:`,
+//         err.message
+//       );
+
+//     }
+//   }
+
+
+//   // ============================================================
+//   // 7. SORT FINAL RESULT
+//   // ============================================================
+
+//   results.sort(
+//     (a, b) =>
+//       new Date(b.working_time) -
+//       new Date(a.working_time)
+//   );
+
+//   return results;
+// };

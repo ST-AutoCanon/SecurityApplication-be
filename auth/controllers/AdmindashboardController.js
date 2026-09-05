@@ -1764,6 +1764,10 @@ export const getEventContributions = async (req, res) => {
       success: true,
       data,
     });
+    console.log(
+      "Event contributors:",
+      data
+    );
   } catch (err) {
     console.error("getEventContributions error:", err);
 
