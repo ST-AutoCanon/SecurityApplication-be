@@ -73,13 +73,30 @@ export const getRecentVisitors = async (
   }
 
   // ============================================================
-  // 2. QUERY
+  // 2. NORMALIZE PURPOSE
   //
-  // IMPORTANT:
-  // Do NOT GROUP BY user_id + DATE anymore.
+  // Examples:
   //
-  // Every IN punch becomes a separate visit.
-  // Each IN is paired with the next OUT before another IN.
+  // delivery_person  -> delivery_person
+  // Delivery Person   -> delivery_person
+  // patient_visitor   -> patient_visitor
+  // Patient Visitor   -> patient_visitor
+  // vendor_           -> vendor
+  // vendor            -> vendor
+  // visitors          -> visitors
+  //
+  // This allows dynamic categories to work even if the stored
+  // table_name and category key have slightly different formats.
+  // ============================================================
+
+  const normalizedPurpose = String(purpose || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  // ============================================================
+  // 3. QUERY
   // ============================================================
 
   const query = `
@@ -101,15 +118,50 @@ export const getRecentVisitors = async (
 
         AND user_id IS NOT NULL
 
+        -- ======================================================
+        -- SEARCH
+        -- ======================================================
+
         AND (
           $1 = ''
           OR LOWER(full_name) LIKE LOWER('%' || $1 || '%')
           OR LOWER(table_name) LIKE LOWER('%' || $1 || '%')
         )
 
+        -- ======================================================
+        -- DYNAMIC PURPOSE FILTER
+        --
+        -- We normalize the database table_name in exactly the
+        -- same way as the frontend/category key.
+        --
+        -- Example:
+        --
+        -- "Delivery Person"
+        --       ↓
+        -- "delivery_person"
+        --
+        -- "delivery_person"
+        --       ↓
+        -- "delivery_person"
+        --
+        -- "vendor_"
+        --       ↓
+        -- "vendor"
+        -- ======================================================
+
         AND (
           $2 = ''
-          OR LOWER(table_name) = LOWER($2)
+          OR REGEXP_REPLACE(
+               REGEXP_REPLACE(
+                 LOWER(TRIM(table_name)),
+                 '[^a-z0-9]+',
+                 '_',
+                 'g'
+               ),
+               '^_+|_+$',
+               '',
+               'g'
+             ) = $2
         )
     ),
 
@@ -132,20 +184,42 @@ export const getRecentVisitors = async (
           WHERE
             o.user_id = i.user_id
 
-            AND LOWER(o.table_name) =
-                LOWER(i.table_name)
+            -- ==================================================
+            -- MATCH SAME CATEGORY
+            -- ==================================================
+
+            AND REGEXP_REPLACE(
+                  REGEXP_REPLACE(
+                    LOWER(TRIM(o.table_name)),
+                    '[^a-z0-9]+',
+                    '_',
+                    'g'
+                  ),
+                  '^_+|_+$',
+                  '',
+                  'g'
+                )
+                =
+                REGEXP_REPLACE(
+                  REGEXP_REPLACE(
+                    LOWER(TRIM(i.table_name)),
+                    '[^a-z0-9]+',
+                    '_',
+                    'g'
+                  ),
+                  '^_+|_+$',
+                  '',
+                  'g'
+                )
 
             AND UPPER(TRIM(o.punch_type)) = 'OUT'
 
             AND o.punch_time > i.punch_time
 
-            /*
-             * Make sure this OUT belongs to
-             * this IN session.
-             *
-             * If another IN occurs before the OUT,
-             * this OUT belongs to the later IN.
-             */
+            -- ==================================================
+            -- MAKE SURE THIS OUT BELONGS TO THIS IN
+            -- ==================================================
+
             AND NOT EXISTS (
 
               SELECT 1
@@ -155,8 +229,29 @@ export const getRecentVisitors = async (
               WHERE
                 next_in.user_id = i.user_id
 
-                AND LOWER(next_in.table_name) =
-                    LOWER(i.table_name)
+                AND REGEXP_REPLACE(
+                      REGEXP_REPLACE(
+                        LOWER(TRIM(next_in.table_name)),
+                        '[^a-z0-9]+',
+                        '_',
+                        'g'
+                      ),
+                      '^_+|_+$',
+                      '',
+                      'g'
+                    )
+                    =
+                    REGEXP_REPLACE(
+                      REGEXP_REPLACE(
+                        LOWER(TRIM(i.table_name)),
+                        '[^a-z0-9]+',
+                        '_',
+                        'g'
+                      ),
+                      '^_+|_+$',
+                      '',
+                      'g'
+                    )
 
                 AND UPPER(TRIM(next_in.punch_type)) = 'IN'
 
@@ -189,6 +284,10 @@ export const getRecentVisitors = async (
       time_in DESC;
   `;
 
+  // ============================================================
+  // DEBUG LOGS
+  // ============================================================
+
   console.log(
     "========================================"
   );
@@ -213,27 +312,34 @@ export const getRecentVisitors = async (
   );
 
   console.log(
-    "Purpose:",
+    "Original Purpose:",
     purpose
+  );
+
+  console.log(
+    "Normalized Purpose:",
+    normalizedPurpose
   );
 
   console.log(
     "========================================"
   );
 
-  console.log(
-    "Recent Visitors Query:",
-    query
+  // ============================================================
+  // EXECUTE QUERY
+  // ============================================================
+
+  const result = await client.query(
+    query,
+    [
+      String(search || "").trim(),
+      normalizedPurpose,
+    ]
   );
 
-  const result =
-    await client.query(
-      query,
-      [
-        search,
-        purpose,
-      ]
-    );
+  // ============================================================
+  // RESULT LOGS
+  // ============================================================
 
   console.log(
     "Recent Visitors Result:",
@@ -249,6 +355,222 @@ export const getRecentVisitors = async (
 };
 // export const getRecentVisitors = async (
 //   client,
+//   schemaName,
+//   search = "",
+//   purpose = "",
+//   period = "daily"
+// ) => {
+//   // ============================================================
+//   // 1. DATE FILTER
+//   // ============================================================
+
+//   let dateCondition = "";
+
+//   switch (period) {
+//     case "weekly":
+//       dateCondition = `
+//         punch_time >= DATE_TRUNC(
+//           'week',
+//           CURRENT_DATE
+//         )
+//         AND punch_time < CURRENT_DATE + INTERVAL '1 day'
+//       `;
+//       break;
+
+//     case "monthly":
+//       dateCondition = `
+//         punch_time >= DATE_TRUNC(
+//           'month',
+//           CURRENT_DATE
+//         )
+//         AND punch_time < CURRENT_DATE + INTERVAL '1 day'
+//       `;
+//       break;
+
+//     case "daily":
+//     default:
+//       dateCondition = `
+//         punch_time >= CURRENT_DATE
+//         AND punch_time < CURRENT_DATE + INTERVAL '1 day'
+//       `;
+//       break;
+//   }
+
+//   // ============================================================
+//   // 2. QUERY
+//   //
+//   // IMPORTANT:
+//   // Do NOT GROUP BY user_id + DATE anymore.
+//   //
+//   // Every IN punch becomes a separate visit.
+//   // Each IN is paired with the next OUT before another IN.
+//   // ============================================================
+
+//   const query = `
+//     WITH filtered_logs AS (
+
+//       SELECT
+//         user_id,
+//         full_name,
+//         table_name,
+//         punch_type,
+//         punch_time
+
+//       FROM "${schemaName}".punch_logs
+
+//       WHERE
+//         ${dateCondition}
+
+//         AND punch_time IS NOT NULL
+
+//         AND user_id IS NOT NULL
+
+//         AND (
+//           $1 = ''
+//           OR LOWER(full_name) LIKE LOWER('%' || $1 || '%')
+//           OR LOWER(table_name) LIKE LOWER('%' || $1 || '%')
+//         )
+
+//         AND (
+//           $2 = ''
+//           OR LOWER(table_name) = LOWER($2)
+//         )
+//     ),
+
+//     visits AS (
+
+//       SELECT
+//         i.user_id,
+//         i.full_name,
+//         i.table_name,
+
+//         DATE(i.punch_time) AS visit_date,
+
+//         i.punch_time AS time_in,
+
+//         (
+//           SELECT MIN(o.punch_time)
+
+//           FROM "${schemaName}".punch_logs o
+
+//           WHERE
+//             o.user_id = i.user_id
+
+//             AND LOWER(o.table_name) =
+//                 LOWER(i.table_name)
+
+//             AND UPPER(TRIM(o.punch_type)) = 'OUT'
+
+//             AND o.punch_time > i.punch_time
+
+//             /*
+//              * Make sure this OUT belongs to
+//              * this IN session.
+//              *
+//              * If another IN occurs before the OUT,
+//              * this OUT belongs to the later IN.
+//              */
+//             AND NOT EXISTS (
+
+//               SELECT 1
+
+//               FROM "${schemaName}".punch_logs next_in
+
+//               WHERE
+//                 next_in.user_id = i.user_id
+
+//                 AND LOWER(next_in.table_name) =
+//                     LOWER(i.table_name)
+
+//                 AND UPPER(TRIM(next_in.punch_type)) = 'IN'
+
+//                 AND next_in.punch_time >
+//                     i.punch_time
+
+//                 AND next_in.punch_time <
+//                     o.punch_time
+//             )
+//         ) AS time_out
+
+//       FROM filtered_logs i
+
+//       WHERE
+//         UPPER(TRIM(i.punch_type)) = 'IN'
+//     )
+
+//     SELECT
+//       user_id,
+//       full_name,
+//       table_name,
+//       visit_date,
+//       time_in,
+//       time_out
+
+//     FROM visits
+
+//     ORDER BY
+//       visit_date DESC,
+//       time_in DESC;
+//   `;
+
+//   console.log(
+//     "========================================"
+//   );
+
+//   console.log(
+//     "RECENT VISITORS"
+//   );
+
+//   console.log(
+//     "Schema:",
+//     schemaName
+//   );
+
+//   console.log(
+//     "Period:",
+//     period
+//   );
+
+//   console.log(
+//     "Search:",
+//     search
+//   );
+
+//   console.log(
+//     "Purpose:",
+//     purpose
+//   );
+
+//   console.log(
+//     "========================================"
+//   );
+
+//   console.log(
+//     "Recent Visitors Query:",
+//     query
+//   );
+
+//   const result =
+//     await client.query(
+//       query,
+//       [
+//         search,
+//         purpose,
+//       ]
+//     );
+
+//   console.log(
+//     "Recent Visitors Result:",
+//     result.rows
+//   );
+
+//   console.log(
+//     "Recent Visitors Count:",
+//     result.rows.length
+//   );
+
+//   return result.rows;
+// };
 //   schemaName,
 //   search = "",
 //   purpose = "",

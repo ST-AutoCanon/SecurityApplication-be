@@ -63,10 +63,13 @@ export const getRecentVisitors = async (req, res) => {
     period = "daily",
   } = req.query;
 
-  const businessDB = getBusinessDB(orgType);
-  const client = await businessDB.connect();
+  let client;
 
   try {
+    const businessDB = getBusinessDB(orgType);
+
+    client = await businessDB.connect();
+
     const data = await fetchRecentVisitors(
       client,
       organisationId,
@@ -87,9 +90,48 @@ export const getRecentVisitors = async (req, res) => {
       message: err.message,
     });
   } finally {
-    client.release();
+    if (client) {
+      client.release();
+    }
   }
 };
+// export const getRecentVisitors = async (req, res) => {
+//   const organisationId = req.user.organisation_id;
+//   const orgType = req.user.org_type?.toLowerCase();
+
+//   const {
+//     search = "",
+//     purpose = "",
+//     period = "daily",
+//   } = req.query;
+
+//   const businessDB = getBusinessDB(orgType);
+//   const client = await businessDB.connect();
+
+//   try {
+//     const data = await fetchRecentVisitors(
+//       client,
+//       organisationId,
+//       search,
+//       purpose,
+//       period
+//     );
+
+//     res.json({
+//       success: true,
+//       data,
+//     });
+//   } catch (err) {
+//     console.error("getRecentVisitors error:", err);
+
+//     res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   } finally {
+//     client.release();
+//   }
+// };
 export const getCategoryStats = async (req, res) => {
   const organisationId = req.user.organisation_id;
     console.log("Organisation ID:", organisationId); 
