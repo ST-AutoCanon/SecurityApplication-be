@@ -12,14 +12,100 @@ import {
   findUserByResetPasswordToken,
   updatePasswordAfterReset,
 } from "../models/masterUser.model.js";
-
+import masterAuthDB from "../../config/masterAuthDB.js";
 import { sendForgotPasswordEmail } from "./mail.service.js";
 
 /* ===========================
    LOGIN
 =========================== */
+// export const loginService = async (email, password, organisation_id) => {
+//   // SUPER ADMIN
+//   if (!organisation_id) {
+//     const user = await findMasterUserByEmail(email);
+
+//     if (!user || user.role !== "super_admin") {
+//       return {
+//         success: false,
+//         message: "Invalid email or password",
+//       };
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password);
+
+//     if (!isMatch) {
+//       return {
+//         success: false,
+//         message: "Invalid email or password",
+//       };
+//     }
+
+//     return {
+//       success: true,
+//       data: { user },
+//     };
+//   }
+
+//   // ORG ADMIN
+//   const orgAdmin = await findOrgAdminByEmail(email, organisation_id);
+
+//   if (orgAdmin) {
+//     const isMatch = await bcrypt.compare(password, orgAdmin.password);
+
+//     if (!isMatch) {
+//       return {
+//         success: false,
+//         message: "Invalid email or password",
+//       };
+//     }
+
+//     return {
+//       success: true,
+//       data: {
+//         user: orgAdmin,
+//       },
+//     };
+//   }
+
+//   // SECURITY USER
+//   const orgUser = await findOrgUserByEmail(email, organisation_id);
+
+//   if (!orgUser) {
+//     return {
+//       success: false,
+//       message: "Invalid email or password",
+//     };
+//   }
+
+//   if (!orgUser.is_active) {
+//     return {
+//       success: false,
+//       message:
+//         "Your account has been deactivated. Please contact the administrator.",
+//     };
+//   }
+
+//   const isMatch = await bcrypt.compare(password, orgUser.password);
+
+//   if (!isMatch) {
+//     return {
+//       success: false,
+//       message: "Invalid email or password",
+//     };
+//   }
+
+//   return {
+//     success: true,
+//     data: {
+//       user: orgUser,
+//     },
+//   };
+// };
+
+
 export const loginService = async (email, password, organisation_id) => {
-  // SUPER ADMIN
+  /* ===========================
+     SUPER ADMIN
+  =========================== */
   if (!organisation_id) {
     const user = await findMasterUserByEmail(email);
 
@@ -41,15 +127,60 @@ export const loginService = async (email, password, organisation_id) => {
 
     return {
       success: true,
-      data: { user },
+      data: {
+        user,
+      },
     };
   }
 
-  // ORG ADMIN
-  const orgAdmin = await findOrgAdminByEmail(email, organisation_id);
+  /* ===========================
+     CHECK ORGANISATION STATUS
+  =========================== */
+  const organisation = await masterAuthDB.query(
+    `
+    SELECT
+      id,
+      status
+    FROM auth.organisations
+    WHERE id = $1
+    LIMIT 1
+    `,
+    [organisation_id],
+  );
+
+  const org = organisation.rows[0];
+
+  if (!org) {
+    return {
+      success: false,
+      message: "Invalid organisation.",
+    };
+  }
+
+  /* ===========================
+     CHECK ORGANISATION ACTIVE
+  =========================== */
+  if (org.status?.toUpperCase() === "INACTIVE") {
+    return {
+      success: false,
+      message:
+        "This organisation is inactive. Please contact the administrator.",
+    };
+  }
+
+  /* ===========================
+     ORG ADMIN
+  =========================== */
+  const orgAdmin = await findOrgAdminByEmail(
+    email,
+    organisation_id,
+  );
 
   if (orgAdmin) {
-    const isMatch = await bcrypt.compare(password, orgAdmin.password);
+    const isMatch = await bcrypt.compare(
+      password,
+      orgAdmin.password,
+    );
 
     if (!isMatch) {
       return {
@@ -66,8 +197,13 @@ export const loginService = async (email, password, organisation_id) => {
     };
   }
 
-  // SECURITY USER
-  const orgUser = await findOrgUserByEmail(email, organisation_id);
+  /* ===========================
+     SECURITY USER
+  =========================== */
+  const orgUser = await findOrgUserByEmail(
+    email,
+    organisation_id,
+  );
 
   if (!orgUser) {
     return {
@@ -76,6 +212,9 @@ export const loginService = async (email, password, organisation_id) => {
     };
   }
 
+  /* ===========================
+     CHECK USER STATUS
+  =========================== */
   if (!orgUser.is_active) {
     return {
       success: false,
@@ -84,7 +223,13 @@ export const loginService = async (email, password, organisation_id) => {
     };
   }
 
-  const isMatch = await bcrypt.compare(password, orgUser.password);
+  /* ===========================
+     CHECK PASSWORD
+  =========================== */
+  const isMatch = await bcrypt.compare(
+    password,
+    orgUser.password,
+  );
 
   if (!isMatch) {
     return {
@@ -100,6 +245,9 @@ export const loginService = async (email, password, organisation_id) => {
     },
   };
 };
+
+
+
 
 /* ===========================
    FIRST TIME PASSWORD
