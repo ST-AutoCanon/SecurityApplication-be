@@ -31,6 +31,7 @@ import dynamicTableRoutes from "./auth/routes/dynamicTable.routes.js";
 import assignGatesRoutes from "./auth/routes/assignGates.routes.js";
 import AdminDashboardRoutes from "./auth/routes/AdmindashboardRoutes.js";
 
+import quickRequestRoutes from "./security/routes/quickRequest.routes.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -157,13 +158,17 @@ app.use("/dynamic-data", dynamicDataRoutes);
 
 app.use("/punch-data", punchdata);
 
-
+app.use(
+  "/api/quick-requests",
+  quickRequestRoutes
+);
 // PUBLIC GATES
 app.use("/api", assignGatesRoutes);
 
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin", assignGatesRoutes);
 app.use("/api/admin/dashboard", AdminDashboardRoutes);
+
 
 app.use("/api/admin/apartment", apartmentRoutes);
 // =========================
