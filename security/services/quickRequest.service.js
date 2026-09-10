@@ -454,6 +454,7 @@ export const getMyQuickRequestResponsesService = async (organisationId, userId) 
         reviewedBy: row.reviewed_by,
         reviewedAt: row.reviewed_at,
         rejectionReason: row.rejection_reason,
+        approvalComment: row.approval_comment,
       };
     })
   );
@@ -502,6 +503,7 @@ export const getAllQuickRequestResponsesService =
           reviewedBy: row.reviewed_by,
           reviewedAt: row.reviewed_at,
           rejectionReason: row.rejection_reason,
+          approvalComment: row.approval_comment,
         };
       })
     );
@@ -553,6 +555,7 @@ export const getQuickRequestResponseByIdService =
         reviewedBy: row.reviewed_by,
         reviewedAt: row.reviewed_at,
         rejectionReason: row.rejection_reason,
+        approvalComment: row.approval_comment,
       },
     };
   };
@@ -561,64 +564,45 @@ export const getQuickRequestResponseByIdService =
 // UPDATE RESPONSE STATUS
 // ============================================================
 
-export const updateQuickRequestResponseStatusService =
-  async (
-    organisationId,
+export const updateQuickRequestResponseStatusService = async (
+  organisationId,
+  responseId,
+  status,
+  reviewedBy,
+  rejectionReason,
+  approvalComment              // ← add
+) => {
+  const connection = await getOrganisationDB(organisationId);
+  if (!connection.success) return connection;
+
+  if (!["Pending", "Approved", "Rejected"].includes(status)) {
+    return { success: false, message: "Invalid response status" };
+  }
+
+  if (status === "Rejected" && !rejectionReason?.trim()) {
+    return {
+      success: false,
+      message: "Rejection reason is required when rejecting a request",
+    };
+  }
+
+  const result = await model.updateQuickRequestResponseStatus(
+    connection.db,
+    connection.schema,
     responseId,
     status,
     reviewedBy,
-    rejectionReason
-  ) => {
-    const connection = await getOrganisationDB(
-      organisationId
-    );
+    status === "Rejected" ? rejectionReason || null : null,
+    status === "Approved" ? approvalComment || null : null   // ← add
+  );
 
-    if (!connection.success) {
-      return connection;
-    }
+  if (!result) {
+    return { success: false, message: "Response not found" };
+  }
 
-    if (
-      !["Pending", "Approved", "Rejected"].includes(
-        status
-      )
-    ) {
-      return {
-        success: false,
-        message: "Invalid response status",
-      };
-    }
-
-    if (
-      status === "Rejected" &&
-      !rejectionReason?.trim()
-    ) {
-      return {
-        success: false,
-        message:
-          "Rejection reason is required when rejecting a request",
-      };
-    }
-
-    const result =
-      await model.updateQuickRequestResponseStatus(
-        connection.db,
-        connection.schema,
-        responseId,
-        status,
-        reviewedBy,
-        rejectionReason || null
-      );
-
-    if (!result) {
-      return {
-        success: false,
-        message: "Response not found",
-      };
-    }
-
-    return {
-      success: true,
-      message: "Response status updated successfully",
-      data: result,
-    };
+  return {
+    success: true,
+    message: "Response status updated successfully",
+    data: result,
   };
+};

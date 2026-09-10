@@ -671,6 +671,7 @@ export const getAllQuickRequestResponses = async (
       r.reviewed_by,
       r.reviewed_at,
       r.rejection_reason,
+      r.approval_comment,
       q.request_name,
       q.icon
     FROM "${schema}".quick_request_responses r
@@ -705,6 +706,7 @@ export const getQuickRequestResponseById = async (
       r.reviewed_by,
       r.reviewed_at,
       r.rejection_reason,
+      r.approval_comment,
       q.request_name
     FROM "${schema}".quick_request_responses r
     LEFT JOIN "${schema}".quick_request_types q
@@ -735,6 +737,7 @@ export const getMyQuickRequestResponses = async (db, schema, userId) => {
       r.reviewed_by,
       r.reviewed_at,
       r.rejection_reason,
+      r.approval_comment,
       q.request_name,
       q.icon
     FROM "${schema}".quick_request_responses r
@@ -757,7 +760,8 @@ export const updateQuickRequestResponseStatus = async (
   responseId,
   status,
   reviewedBy,
-  rejectionReason = null
+  rejectionReason = null,
+  approvalComment = null          // ← add
 ) => {
   const query = `
     UPDATE "${schema}".quick_request_responses
@@ -765,8 +769,9 @@ export const updateQuickRequestResponseStatus = async (
       status = $1,
       reviewed_by = $2,
       reviewed_at = CURRENT_TIMESTAMP,
-      rejection_reason = $3
-    WHERE id = $4
+      rejection_reason = $3,
+      approval_comment = $4
+    WHERE id = $5
     RETURNING
       id,
       request_type_id,
@@ -777,18 +782,17 @@ export const updateQuickRequestResponseStatus = async (
       submitted_at,
       reviewed_by,
       reviewed_at,
-      rejection_reason;
+      rejection_reason,
+      approval_comment;
   `;
 
-  const result = await db.query(
-    query,
-    [
-      status,
-      reviewedBy,
-      rejectionReason,
-      responseId,
-    ]
-  );
+  const result = await db.query(query, [
+    status,
+    reviewedBy,
+    rejectionReason,
+    approvalComment,
+    responseId,
+  ]);
 
   return result.rows[0] || null;
 };

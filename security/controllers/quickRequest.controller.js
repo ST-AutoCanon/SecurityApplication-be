@@ -400,47 +400,38 @@ export const getMyQuickRequestResponses = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
-export const updateQuickRequestResponseStatus =
-  async (req, res) => {
-    try {
-      const organisationId =
-        req.user.organisation_id;
 
-      const reviewedBy =
-        req.user.id ||
-        req.user.employee_id ||
-        null;
+export const updateQuickRequestResponseStatus = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const reviewedBy = req.user.id || req.user.employee_id || null;
+    const { id } = req.params;
 
-      const { id } = req.params;
+    const {
+      status,
+      rejectionReason = null,
+      approvalComment = null,   // ← add
+    } = req.body;
 
-      const {
-        status,
-        rejectionReason = null,
-      } = req.body;
+    const result = await updateQuickRequestResponseStatusService(
+      organisationId,
+      id,
+      status,
+      reviewedBy,
+      rejectionReason,
+      approvalComment            // ← add
+    );
 
-      const result =
-        await updateQuickRequestResponseStatusService(
-          organisationId,
-          id,
-          status,
-          reviewedBy,
-          rejectionReason
-        );
-
-      if (!result.success) {
-        return res.status(400).json(result);
-      }
-
-      return res.json(result);
-    } catch (err) {
-      console.error(
-        "updateQuickRequestResponseStatus error:",
-        err
-      );
-
-      return res.status(500).json({
-        success: false,
-        message: err.message,
-      });
+    if (!result.success) {
+      return res.status(400).json(result);
     }
-  };
+
+    return res.json(result);
+  } catch (err) {
+    console.error("updateQuickRequestResponseStatus error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
