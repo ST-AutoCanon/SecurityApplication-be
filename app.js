@@ -13,6 +13,7 @@ import formsRoutes from "./security/routes/forms.routes.js";
 ///////// campaignroutes///////////
 import campaignRoutes from "./security/routes/campaign.routes.js";
 import campaignBlockRoutes from "./security/routes/campaign.blockroutes.js";
+import campaignUploadRoutes from "./security/routes/campaignUpload.routes.js";
 import uploadRoutes from "./security/routes/upload.routes.js";
 //////////////////////////////////////
 
@@ -76,10 +77,30 @@ app.get("/", (req, res) => {
   });
 });
 
-app.get("/api/uploads/:filename", (req, res) => {
+app.get("/api/uploads/*", (req, res) => {
   try {
-    const filename = path.basename(req.params.filename); // security - prevent path traversal
-    const filePath = path.join(process.cwd(), "security", "uploads", filename);
+    const relativePath = req.params[0] || "";
+    const safeSegments = relativePath
+      .split(/[\\/]+/)
+      .filter((segment) => segment && segment !== "." && segment !== "..")
+      .map((segment) => path.basename(segment));
+
+    if (!safeSegments.length) {
+      return res.status(400).json({
+        success: false,
+        message: "No file path provided",
+      });
+    }
+
+    const filePath = path.join(process.cwd(), "security", "uploads", ...safeSegments);
+    const uploadsRoot = path.join(process.cwd(), "security", "uploads");
+
+    if (!filePath.startsWith(uploadsRoot)) {
+      return res.status(403).json({
+        success: false,
+        message: "Invalid file path",
+      });
+    }
 
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({
@@ -88,6 +109,7 @@ app.get("/api/uploads/:filename", (req, res) => {
       });
     }
 
+    const filename = path.basename(filePath);
     const ext = path.extname(filename).toLowerCase();
 
     const mimeTypes = {
@@ -149,6 +171,7 @@ app.use("/api/forms", formsRoutes);
 ///////////////////campaign routes////////
 app.use("/api/campaigns", campaignRoutes);
 app.use("/api/campaigns", campaignBlockRoutes);
+app.use("/api/upload", campaignUploadRoutes);
 app.use("/api/upload", uploadRoutes); 
 
 
