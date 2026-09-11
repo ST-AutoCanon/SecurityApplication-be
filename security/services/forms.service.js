@@ -54,6 +54,7 @@ export const getFormResponsesService = async (organisationId, formId) => {
           title: form.title,
           description: form.description || "",
           fields: form.fields_json || [],
+          layoutColumns: form.layout_columns || 2,
         },
         responses,
       },
@@ -80,6 +81,7 @@ export const getAllFormsService = async (organisationId) => {
       title: row.title,
       description: row.description || "",
       fields: row.fields_json || [],
+      layoutColumns: row.layout_columns || 2,
       createdBy: row.created_by,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -118,6 +120,7 @@ export const getFormByIdService = async (organisationId, formId) => {
         title: row.title,
         description: row.description || "",
         fields: row.fields_json || [],
+        layoutColumns: row.layout_columns || 2,
         createdBy: row.created_by,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
@@ -150,6 +153,7 @@ export const createFormService = async (organisationId, payload, userId) => {
       title: payload.title.trim(),
       description: payload.description || null,
       fields_json: payload.fields || [],
+      layout_columns: payload.layoutColumns || 2,
       created_by: userId || null,
     });
 
@@ -161,6 +165,7 @@ export const createFormService = async (organisationId, payload, userId) => {
         title: row.title,
         description: row.description || "",
         fields: row.fields_json || [],
+        layoutColumns: row.layout_columns || 2,
         createdBy: row.created_by,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
@@ -193,6 +198,7 @@ export const updateFormService = async (organisationId, formId, payload) => {
       title: payload.title.trim(),
       description: payload.description || null,
       fields_json: payload.fields || [],
+      layout_columns: payload.layoutColumns || 2,
     });
 
     if (!row) {
@@ -207,6 +213,7 @@ export const updateFormService = async (organisationId, formId, payload) => {
         title: row.title,
         description: row.description || "",
         fields: row.fields_json || [],
+        layoutColumns: row.layout_columns || 2,
         createdBy: row.created_by,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
@@ -273,6 +280,7 @@ export const getPublicFormService = async (orgId, formId) => {
         title: row.title,
         description: row.description || "",
         fields: row.fields_json || [],
+        layoutColumns: row.layout_columns || 2,
       },
     };
   } catch (err) {

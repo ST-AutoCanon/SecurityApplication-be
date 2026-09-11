@@ -8,6 +8,7 @@ export const getAllForms = async (db, schema) => {
       title,
       description,
       fields_json,
+      layout_columns,
       created_by,
       created_at,
       updated_at
@@ -29,6 +30,7 @@ export const getFormById = async (db, schema, formId) => {
       title,
       description,
       fields_json,
+      layout_columns,
       created_by,
       created_at,
       updated_at
@@ -50,9 +52,10 @@ export const createForm = async (db, schema, data) => {
       title,
       description,
       fields_json,
+      layout_columns,
       created_by
     )
-    VALUES ($1, $2, $3, $4)
+    VALUES ($1, $2, $3, $4, $5)
     RETURNING *;
   `;
 
@@ -60,6 +63,7 @@ export const createForm = async (db, schema, data) => {
     data.title,
     data.description || null,
     JSON.stringify(data.fields_json || []),
+    data.layout_columns || 2,
     data.created_by || null,
   ];
 
@@ -77,8 +81,9 @@ export const updateForm = async (db, schema, formId, data) => {
       title = $1,
       description = $2,
       fields_json = $3,
+      layout_columns = $4,
       updated_at = CURRENT_TIMESTAMP
-    WHERE id = $4
+    WHERE id = $5
     RETURNING *;
   `;
 
@@ -86,6 +91,7 @@ export const updateForm = async (db, schema, formId, data) => {
     data.title,
     data.description || null,
     JSON.stringify(data.fields_json || []),
+    data.layout_columns || 2,
     formId,
   ];
 

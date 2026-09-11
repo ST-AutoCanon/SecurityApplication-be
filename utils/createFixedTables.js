@@ -9,10 +9,16 @@ export const createFixedTables = async (db, schemaName) => {
       title VARCHAR(255) NOT NULL,
       description VARCHAR(500),
       fields_json JSONB NOT NULL,
+      layout_columns INTEGER NOT NULL DEFAULT 2,
       created_by INTEGER,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
     );
+  `);
+
+  await db.query(`
+    ALTER TABLE "${schemaName}"."forms"
+    ADD COLUMN IF NOT EXISTS layout_columns INTEGER NOT NULL DEFAULT 2;
   `);
 
   // Index for forms.created_by
