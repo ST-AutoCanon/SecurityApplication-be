@@ -23,7 +23,7 @@ const router = express.Router();
 router.use(auth);
 
 // Gate list — any authenticated user
-router.get("/gates", controller.getAssignGates);
+router.get("/gates", controller.getAssignActiveGates);
 
 const adminOnly = (req, res, next) => {
   if (req.user?.role !== "admin") {

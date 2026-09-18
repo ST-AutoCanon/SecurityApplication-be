@@ -5,6 +5,47 @@ import { getBusinessDB } from "../../db/dbRouter.js";
 import * as model from "../models/assignGatesModel.js";
 import { getOrganisationSchema } from "../models/admin.model.js";
 
+//Get only active assign gates for security login
+export const getAssignActiveGatesService = async (organisationId, orgType) => {
+  const businessDB = getBusinessDB(orgType.toLowerCase());
+
+  const businessClient = await businessDB.connect();
+  const authClient = await masterAuthDB.connect();
+
+  try {
+    const organisation = await getOrganisationSchema(
+      authClient,
+      organisationId,
+    );
+
+    if (!organisation) {
+      return {
+        success: false,
+        message: "Organisation not found",
+      };
+    }
+
+    const gates = await model.getActiveAssignGates(
+      businessClient,
+      organisation.schema_name,
+    );
+
+    return {
+      success: true,
+      message: "Assign gates fetched successfully",
+      data: gates,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error.message,
+    };
+  } finally {
+    businessClient.release();
+    authClient.release();
+  }
+};
+
 // Get all assign gates
 export const getAssignGatesService = async (
   organisationId,

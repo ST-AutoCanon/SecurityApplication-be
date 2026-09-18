@@ -74,12 +74,34 @@ export const getMasterUsers = async () => {
 /* =========================
    ORG ADMIN LOGIN
 ========================= */
+// export const findOrgAdminByEmail = async (email, organisationId) => {
+//   const result = await masterAuthDB.query(
+//     `
+//     SELECT
+//       u.*,
+//       o.org_type
+//     FROM auth.users u
+//     INNER JOIN auth.organisations o
+//       ON o.id = u.organisation_id
+//     WHERE u.email = $1
+//       AND u.organisation_id = $2
+//       AND u.role = 'admin'
+//     LIMIT 1
+//     `,
+//     [email, organisationId],
+//   );
+
+//   return result.rows[0];
+// };
+
+
 export const findOrgAdminByEmail = async (email, organisationId) => {
   const result = await masterAuthDB.query(
     `
     SELECT
       u.*,
-      o.org_type
+      o.org_type,
+      o.status AS organisation_status
     FROM auth.users u
     INNER JOIN auth.organisations o
       ON o.id = u.organisation_id
@@ -99,12 +121,32 @@ export const findOrgAdminByEmail = async (email, organisationId) => {
    NO SCHEMA USED ANYMORE
 ========================= */
 
+// export const findOrgUserByEmail = async (email, organisationId) => {
+//   const result = await masterAuthDB.query(
+//     `
+//     SELECT
+//       u.*,
+//       o.org_type
+//     FROM auth.users u
+//     INNER JOIN auth.organisations o
+//       ON o.id = u.organisation_id
+//     WHERE u.email = $1
+//       AND u.organisation_id = $2
+//     LIMIT 1
+//     `,
+//     [email, organisationId],
+//   );
+
+//   return result.rows[0];
+// };
+
 export const findOrgUserByEmail = async (email, organisationId) => {
   const result = await masterAuthDB.query(
     `
     SELECT
       u.*,
-      o.org_type
+      o.org_type,
+      o.status AS organisation_status
     FROM auth.users u
     INNER JOIN auth.organisations o
       ON o.id = u.organisation_id
