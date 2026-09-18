@@ -73,6 +73,9 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
 
     const memberMap = {};
 
+    console.log("Excel Import Data:");
+    console.log("Members:", members);
+    
     let membersImported = 0;
     let familyImported = 0;
     let vehiclesImported = 0;

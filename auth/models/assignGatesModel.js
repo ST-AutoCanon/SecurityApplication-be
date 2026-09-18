@@ -15,6 +15,24 @@ export const getAssignGates = async (client, schemaName) => {
   return result.rows;
 };
 
+export const getActiveAssignGates = async (client, schemaName) => {
+  const result = await client.query(
+    `
+      SELECT
+        id,
+        name,
+        status,
+        created_at,
+        updated_at
+      FROM "${schemaName}".assign_gates
+      WHERE status = true
+      ORDER BY created_at DESC
+    `,
+  );
+
+  return result.rows;
+};
+
 export const getAssignGateById = async (client, schemaName, id) => {
   const result = await client.query(
     `

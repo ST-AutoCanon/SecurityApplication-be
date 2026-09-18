@@ -1,5 +1,28 @@
 import * as service from "../services/assignGates.service.js";
 
+
+// Get all assign active gates for security login
+export const getAssignActiveGates = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const orgType = req.user.org_type;
+
+    const result = await service.getAssignActiveGatesService(
+      organisationId,
+      orgType,
+    );
+
+    return res.status(result.success ? 200 : 400).json(result);
+  } catch (error) {
+    console.error("Get Assign Gates Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server Error",
+    });
+  }
+};
+
 // Get all assign gates
 export const getAssignGates = async (req, res) => {
   try {

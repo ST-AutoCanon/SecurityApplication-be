@@ -33,7 +33,6 @@ export const membersTemplate = [
 
     email: "john@test.com",
 
-
     aadhaar_number: "123456789012",
 
     occupation: "Engineer",
@@ -104,13 +103,466 @@ export const vehiclesTemplate = [
   },
 ];
 
-
-
 /**
  * =====================================
  * APPLY EXCEL STYLE
  * =====================================
  */
+
+// export const applyExcelStyle = (sheet) => {
+//   const range = XLSX.utils.decode_range(sheet["!ref"]);
+
+//   /**
+//    * =========================
+//    * HEADER STYLE
+//    * =========================
+//    */
+
+//   for (let col = range.s.c; col <= range.e.c; col++) {
+//     const address = XLSX.utils.encode_cell({
+//       r: 0,
+
+//       c: col,
+//     });
+
+//     const cell = sheet[address];
+
+//     if (cell) {
+
+//       cell.s = {
+//         fill: {
+//           patternType: "solid",
+
+//           fgColor: {
+//             rgb: "1F4E78",
+//           },
+//         },
+
+//         font: {
+//           bold: true,
+
+//           color: {
+//             rgb: "FFFFFF",
+//           },
+
+//           sz: 12,
+//         },
+
+//         alignment: {
+//           horizontal: "center",
+
+//           vertical: "center",
+
+//           wrapText: true,
+//         },
+
+//         border: {
+//           top: {
+//             style: "thin",
+
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+
+//           bottom: {
+//             style: "thin",
+
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+
+//           left: {
+//             style: "thin",
+
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+
+//           right: {
+//             style: "thin",
+
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+//         },
+//       };
+//     }
+//   }
+
+//   /**
+//    * =========================
+//    * BODY CELL STYLE
+//    * =========================
+//    */
+
+//   for (let row = 1; row <= range.e.r; row++) {
+//     for (let col = range.s.c; col <= range.e.c; col++) {
+//       const address = XLSX.utils.encode_cell({
+//         r: row,
+
+//         c: col,
+//       });
+
+//       const cell = sheet[address];
+
+//       if (cell) {
+//         // Aadhaar number column = J (index 9)
+//         if (col === 9) {
+//           cell.t = "s";
+//           cell.z = "@";
+//         }
+
+//         cell.s = {
+//           alignment: {
+//             vertical: "center",
+
+//             wrapText: true,
+//           },
+
+//           border: {
+//             top: {
+//               style: "thin",
+
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+
+//             bottom: {
+//               style: "thin",
+
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+
+//             left: {
+//               style: "thin",
+
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+
+//             right: {
+//               style: "thin",
+
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+//           },
+//         };
+//       }
+//     }
+//   }
+
+//   /**
+//    * =========================
+//    * COLUMN WIDTH
+//    * =========================
+//    */
+
+//   sheet["!cols"] = [
+//     { wch: 15 }, // member_code
+
+//     { wch: 20 }, // security_user_id
+
+//     { wch: 18 }, // first_name
+
+//     { wch: 18 }, // last_name
+
+//     { wch: 12 }, // gender
+
+//     { wch: 18 }, // DOB
+
+//     { wch: 20 }, // mobile
+
+//     { wch: 25 }, // alternate mobile
+
+//     { wch: 35 }, // email
+
+//     { wch: 22 }, // aadhaar
+
+//     { wch: 22 }, // occupation
+
+//     { wch: 30 }, // apartment
+
+//     { wch: 15 }, // tower
+
+//     { wch: 15 }, // floor
+
+//     { wch: 18 }, // flat
+
+//     { wch: 20 }, // ownership
+
+//     { wch: 18 }, // move date
+
+//     { wch: 22 }, // family count
+
+//     { wch: 28 }, // emergency name
+
+//     { wch: 32 }, // emergency relation
+
+//     { wch: 25 }, // emergency mobile
+
+//     { wch: 18 }, // member type
+
+//     { wch: 12 }, // status
+//   ];
+
+//   /**
+//    * =========================
+//    * ROW HEIGHT
+//    * =========================
+//    */
+
+//   sheet["!rows"] = [
+//     {
+//       hpt: 35,
+//     },
+//   ];
+
+//   /**
+//    * FREEZE HEADER
+//    */
+
+//   sheet["!freeze"] = {
+//     xSplit: 0,
+
+//     ySplit: 1,
+//   };
+
+//   return sheet;
+// };
+//////////////
+
+
+// export const applyExcelStyle = (sheet) => {
+//   const range = XLSX.utils.decode_range(sheet["!ref"]);
+
+//   /**
+//    * =========================
+//    * HEADER STYLE
+//    * =========================
+//    */
+
+//   for (let col = range.s.c; col <= range.e.c; col++) {
+//     const address = XLSX.utils.encode_cell({
+//       r: 0,
+//       c: col,
+//     });
+
+//     const cell = sheet[address];
+
+//     if (cell) {
+//       cell.s = {
+//         fill: {
+//           patternType: "solid",
+//           fgColor: {
+//             rgb: "1F4E78",
+//           },
+//         },
+
+//         font: {
+//           bold: true,
+//           color: {
+//             rgb: "FFFFFF",
+//           },
+//           sz: 12,
+//         },
+
+//         alignment: {
+//           horizontal: "center",
+//           vertical: "center",
+//           wrapText: true,
+//         },
+
+//         border: {
+//           top: {
+//             style: "thin",
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+//           bottom: {
+//             style: "thin",
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+//           left: {
+//             style: "thin",
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+//           right: {
+//             style: "thin",
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+//         },
+//       };
+//     }
+//   }
+
+//   /**
+//    * =========================
+//    * BODY CELL STYLE
+//    * =========================
+//    */
+
+//   for (let row = 1; row <= range.e.r; row++) {
+//     for (let col = range.s.c; col <= range.e.c; col++) {
+//       const address = XLSX.utils.encode_cell({
+//         r: row,
+//         c: col,
+//       });
+
+//       const cell = sheet[address];
+
+//       if (cell) {
+//         // Aadhaar number = column J = index 9
+//         if (col === 9) {
+//           cell.t = "s";
+//           cell.z = "@";
+//         }
+
+//         cell.s = {
+//           alignment: {
+//             vertical: "center",
+//             wrapText: true,
+//           },
+
+//           border: {
+//             top: {
+//               style: "thin",
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+//             bottom: {
+//               style: "thin",
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+//             left: {
+//               style: "thin",
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+//             right: {
+//               style: "thin",
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+//           },
+//         };
+//       }
+//     }
+//   }
+
+//   /**
+//    * =========================
+//    * FORCE AADHAAR COLUMN
+//    * AS TEXT FOR NEW ROWS
+//    * =========================
+//    */
+
+//   const maxRows = 500;
+
+//   for (let row = 1; row <= maxRows; row++) {
+//     const address = XLSX.utils.encode_cell({
+//       r: row,
+//       c: 9, // Column J = Aadhaar
+//     });
+
+//     if (!sheet[address]) {
+//       sheet[address] = {
+//         t: "s",
+//         v: "",
+//         z: "@",
+//       };
+//     } else {
+//       sheet[address].t = "s";
+//       sheet[address].z = "@";
+//     }
+//   }
+
+//   // Extend Excel range to include these rows
+//   const newRange = XLSX.utils.decode_range(sheet["!ref"]);
+
+//   newRange.e.r = Math.max(newRange.e.r, maxRows);
+
+//   sheet["!ref"] = XLSX.utils.encode_range(newRange);
+
+//   /**
+//    * =========================
+//    * COLUMN WIDTH
+//    * =========================
+//    */
+
+//   sheet["!cols"] = [
+//     { wch: 15 },
+//     { wch: 20 },
+//     { wch: 18 },
+//     { wch: 18 },
+//     { wch: 12 },
+//     { wch: 18 },
+//     { wch: 20 },
+//     { wch: 25 },
+//     { wch: 35 },
+//     { wch: 22 },
+//     { wch: 22 },
+//     { wch: 30 },
+//     { wch: 15 },
+//     { wch: 15 },
+//     { wch: 18 },
+//     { wch: 20 },
+//     { wch: 18 },
+//     { wch: 22 },
+//     { wch: 28 },
+//     { wch: 32 },
+//     { wch: 25 },
+//     { wch: 18 },
+//     { wch: 12 },
+//   ];
+
+//   /**
+//    * =========================
+//    * ROW HEIGHT
+//    * =========================
+//    */
+
+//   sheet["!rows"] = [
+//     {
+//       hpt: 35,
+//     },
+//   ];
+
+//   /**
+//    * =========================
+//    * FREEZE HEADER
+//    * =========================
+//    */
+
+//   sheet["!freeze"] = {
+//     xSplit: 0,
+//     ySplit: 1,
+//   };
+
+//   return sheet;
+// };
+
 
 export const applyExcelStyle = (sheet) => {
   const range = XLSX.utils.decode_range(sheet["!ref"]);
@@ -124,7 +576,6 @@ export const applyExcelStyle = (sheet) => {
   for (let col = range.s.c; col <= range.e.c; col++) {
     const address = XLSX.utils.encode_cell({
       r: 0,
-
       c: col,
     });
 
@@ -134,7 +585,6 @@ export const applyExcelStyle = (sheet) => {
       cell.s = {
         fill: {
           patternType: "solid",
-
           fgColor: {
             rgb: "1F4E78",
           },
@@ -142,26 +592,21 @@ export const applyExcelStyle = (sheet) => {
 
         font: {
           bold: true,
-
           color: {
             rgb: "FFFFFF",
           },
-
           sz: 12,
         },
 
         alignment: {
           horizontal: "center",
-
           vertical: "center",
-
           wrapText: true,
         },
 
         border: {
           top: {
             style: "thin",
-
             color: {
               rgb: "FFFFFF",
             },
@@ -169,7 +614,6 @@ export const applyExcelStyle = (sheet) => {
 
           bottom: {
             style: "thin",
-
             color: {
               rgb: "FFFFFF",
             },
@@ -177,7 +621,6 @@ export const applyExcelStyle = (sheet) => {
 
           left: {
             style: "thin",
-
             color: {
               rgb: "FFFFFF",
             },
@@ -185,7 +628,6 @@ export const applyExcelStyle = (sheet) => {
 
           right: {
             style: "thin",
-
             color: {
               rgb: "FFFFFF",
             },
@@ -205,24 +647,34 @@ export const applyExcelStyle = (sheet) => {
     for (let col = range.s.c; col <= range.e.c; col++) {
       const address = XLSX.utils.encode_cell({
         r: row,
-
         c: col,
       });
 
       const cell = sheet[address];
 
       if (cell) {
+        // Aadhaar number column = J (index 9)
+        // Apply Text format ONLY if Aadhaar has a value
+        if (
+          col === 9 &&
+          cell.v !== undefined &&
+          cell.v !== null &&
+          String(cell.v).trim() !== ""
+        ) {
+          cell.t = "s";
+          cell.z = "@";
+          cell.v = String(cell.v);
+        }
+
         cell.s = {
           alignment: {
             vertical: "center",
-
             wrapText: true,
           },
 
           border: {
             top: {
               style: "thin",
-
               color: {
                 rgb: "D1D5DB",
               },
@@ -230,7 +682,6 @@ export const applyExcelStyle = (sheet) => {
 
             bottom: {
               style: "thin",
-
               color: {
                 rgb: "D1D5DB",
               },
@@ -238,7 +689,6 @@ export const applyExcelStyle = (sheet) => {
 
             left: {
               style: "thin",
-
               color: {
                 rgb: "D1D5DB",
               },
@@ -246,7 +696,6 @@ export const applyExcelStyle = (sheet) => {
 
             right: {
               style: "thin",
-
               color: {
                 rgb: "D1D5DB",
               },
@@ -265,49 +714,27 @@ export const applyExcelStyle = (sheet) => {
 
   sheet["!cols"] = [
     { wch: 15 }, // member_code
-
     { wch: 20 }, // security_user_id
-
     { wch: 18 }, // first_name
-
     { wch: 18 }, // last_name
-
     { wch: 12 }, // gender
-
     { wch: 18 }, // DOB
-
     { wch: 20 }, // mobile
-
     { wch: 25 }, // alternate mobile
-
     { wch: 35 }, // email
-
     { wch: 22 }, // aadhaar
-
     { wch: 22 }, // occupation
-
     { wch: 30 }, // apartment
-
     { wch: 15 }, // tower
-
     { wch: 15 }, // floor
-
     { wch: 18 }, // flat
-
     { wch: 20 }, // ownership
-
     { wch: 18 }, // move date
-
     { wch: 22 }, // family count
-
     { wch: 28 }, // emergency name
-
     { wch: 32 }, // emergency relation
-
     { wch: 25 }, // emergency mobile
-
     { wch: 18 }, // member type
-
     { wch: 12 }, // status
   ];
 
@@ -329,7 +756,6 @@ export const applyExcelStyle = (sheet) => {
 
   sheet["!freeze"] = {
     xSplit: 0,
-
     ySplit: 1,
   };
 
