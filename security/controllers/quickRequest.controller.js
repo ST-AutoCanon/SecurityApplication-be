@@ -1,4 +1,763 @@
-// quickRequest/controllers/quickRequest.controller.js
+// // // quickRequest/controllers/quickRequest.controller.js
+
+// // import {
+// //   getAllQuickRequestsService,
+// //   getQuickRequestByIdService,
+// //   createQuickRequestService,
+// //   updateQuickRequestService,
+// //   deleteQuickRequestService,
+// //   updateQuickRequestStatusService,
+// //   createQuickRequestResponseService,
+// //   getAllQuickRequestResponsesService,
+// //   getQuickRequestResponseByIdService,
+// //   updateQuickRequestResponseStatusService,
+// //   getMyQuickRequestResponsesService,
+// // } from "../services/quickRequest.service.js";
+
+// // // ============================================================
+// // // GET ALL REQUEST TYPES
+// // // ============================================================
+
+// // export const getQuickRequests = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const result =
+// //       await getAllQuickRequestsService(
+// //         organisationId
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "getQuickRequests error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // GET SINGLE REQUEST
+// // // ============================================================
+
+// // export const getQuickRequest = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const { id } = req.params;
+
+// //     const result =
+// //       await getQuickRequestByIdService(
+// //         organisationId,
+// //         id
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(404).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "getQuickRequest error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // CREATE REQUEST
+// // // ============================================================
+
+// // export const createQuickRequest = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const userId =
+// //       req.user.id ||
+// //       req.user.employee_id ||
+// //       null;
+
+// //     const result =
+// //       await createQuickRequestService(
+// //         organisationId,
+// //         req.body,
+// //         userId
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.status(201).json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "createQuickRequest error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // UPDATE REQUEST
+// // // ============================================================
+
+// // export const updateQuickRequest = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const { id } = req.params;
+
+// //     const result =
+// //       await updateQuickRequestService(
+// //         organisationId,
+// //         id,
+// //         req.body
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "updateQuickRequest error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // DELETE REQUEST
+// // // ============================================================
+
+// // export const deleteQuickRequest = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const { id } = req.params;
+
+// //     const result =
+// //       await deleteQuickRequestService(
+// //         organisationId,
+// //         id
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "deleteQuickRequest error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // UPDATE REQUEST STATUS
+// // // ============================================================
+
+// // export const updateQuickRequestStatus = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const { id } = req.params;
+// //     const { status } = req.body;
+
+// //     const result =
+// //       await updateQuickRequestStatusService(
+// //         organisationId,
+// //         id,
+// //         status
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "updateQuickRequestStatus error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // SUBMIT RESPONSE
+// // // ============================================================
+
+// // export const submitQuickRequestResponse = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const requestedBy =
+// //       req.user.id ||
+// //       req.user.employee_id;
+
+// //     const { id } = req.params;
+
+// //     const {
+// //       answers = {},
+// //     } = req.body;
+
+// //     if (!requestedBy) {
+// //       return res.status(401).json({
+// //         success: false,
+// //         message: "User ID not found",
+// //       });
+// //     }
+
+// //     const result =
+// //       await createQuickRequestResponseService(
+// //         organisationId,
+// //         id,
+// //         answers,
+// //         requestedBy
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.status(201).json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "submitQuickRequestResponse error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // GET ALL RESPONSES
+// // // ============================================================
+
+// // export const getQuickRequestResponses = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const result =
+// //       await getAllQuickRequestResponsesService(
+// //         organisationId
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "getQuickRequestResponses error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // GET SINGLE RESPONSE
+// // // ============================================================
+
+// // export const getQuickRequestResponse = async (
+// //   req,
+// //   res
+// // ) => {
+// //   try {
+// //     const organisationId =
+// //       req.user.organisation_id;
+
+// //     const { id } = req.params;
+
+// //     const result =
+// //       await getQuickRequestResponseByIdService(
+// //         organisationId,
+// //         id
+// //       );
+
+// //     if (!result.success) {
+// //       return res.status(404).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error(
+// //       "getQuickRequestResponse error:",
+// //       err
+// //     );
+
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// // // ============================================================
+// // // UPDATE RESPONSE STATUS
+// // // ============================================================
+// // // controllers/quickRequest.controller.js
+
+// // export const getMyQuickRequestResponses = async (req, res) => {
+// //   try {
+// //     const organisationId = req.user.organisation_id;
+// //     const userId = req.user.id || req.user.employee_id;
+
+// //     if (!userId) {
+// //       return res.status(401).json({ success: false, message: "User ID not found" });
+// //     }
+
+// //     const result = await getMyQuickRequestResponsesService(organisationId, userId);
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error("getMyQuickRequestResponses error:", err);
+// //     return res.status(500).json({ success: false, message: err.message });
+// //   }
+// // };
+
+// // export const updateQuickRequestResponseStatus = async (req, res) => {
+// //   try {
+// //     const organisationId = req.user.organisation_id;
+// //     const reviewedBy = req.user.id || req.user.employee_id || null;
+// //     const { id } = req.params;
+
+// //     const {
+// //       status,
+// //       rejectionReason = null,
+// //       approvalComment = null,   // ← add
+// //     } = req.body;
+
+// //     const result = await updateQuickRequestResponseStatusService(
+// //       organisationId,
+// //       id,
+// //       status,
+// //       reviewedBy,
+// //       rejectionReason,
+// //       approvalComment            // ← add
+// //     );
+
+// //     if (!result.success) {
+// //       return res.status(400).json(result);
+// //     }
+
+// //     return res.json(result);
+// //   } catch (err) {
+// //     console.error("updateQuickRequestResponseStatus error:", err);
+// //     return res.status(500).json({
+// //       success: false,
+// //       message: err.message,
+// //     });
+// //   }
+// // };
+
+// import {
+//   getAllQuickRequestsService,
+//   getQuickRequestByIdService,
+//   createQuickRequestService,
+//   updateQuickRequestService,
+//   deleteQuickRequestService,
+//   updateQuickRequestStatusService,
+//   createQuickRequestResponseService,
+//   getAllQuickRequestResponsesService,
+//   getQuickRequestResponseByIdService,
+//   updateQuickRequestResponseStatusService,
+//   getMyQuickRequestResponsesService,
+//   saveAnnouncementOnResponseService,
+// } from "../services/quickRequest.service.js";
+
+// // ============================================================
+// // GET ALL REQUEST TYPES
+// // ============================================================
+
+// export const getQuickRequests = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const result = await getAllQuickRequestsService(organisationId);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("getQuickRequests error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // GET SINGLE REQUEST
+// // ============================================================
+
+// export const getQuickRequest = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const { id } = req.params;
+
+//     const result = await getQuickRequestByIdService(organisationId, id);
+
+//     if (!result.success) {
+//       return res.status(404).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("getQuickRequest error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // CREATE REQUEST
+// // ============================================================
+
+// export const createQuickRequest = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const userId = req.user.id || req.user.employee_id || null;
+
+//     const result = await createQuickRequestService(organisationId, req.body, userId);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.status(201).json(result);
+//   } catch (err) {
+//     console.error("createQuickRequest error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // UPDATE REQUEST
+// // ============================================================
+
+// export const updateQuickRequest = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const { id } = req.params;
+
+//     const result = await updateQuickRequestService(organisationId, id, req.body);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("updateQuickRequest error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // DELETE REQUEST
+// // ============================================================
+
+// export const deleteQuickRequest = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const { id } = req.params;
+
+//     const result = await deleteQuickRequestService(organisationId, id);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("deleteQuickRequest error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // UPDATE REQUEST STATUS
+// // ============================================================
+
+// export const updateQuickRequestStatus = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const { id } = req.params;
+//     const { status } = req.body;
+
+//     const result = await updateQuickRequestStatusService(organisationId, id, status);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("updateQuickRequestStatus error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // SUBMIT RESPONSE
+// // ============================================================
+
+// export const submitQuickRequestResponse = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const requestedBy = req.user.id || req.user.employee_id;
+//     const { id } = req.params;
+//     const { answers = {} } = req.body;
+
+//     if (!requestedBy) {
+//       return res.status(401).json({ success: false, message: "User ID not found" });
+//     }
+
+//     const result = await createQuickRequestResponseService(
+//       organisationId,
+//       id,
+//       answers,
+//       requestedBy
+//     );
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.status(201).json(result);
+//   } catch (err) {
+//     console.error("submitQuickRequestResponse error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // GET ALL RESPONSES
+// // ============================================================
+
+// export const getQuickRequestResponses = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const result = await getAllQuickRequestResponsesService(organisationId);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("getQuickRequestResponses error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // GET SINGLE RESPONSE
+// // ============================================================
+
+// export const getQuickRequestResponse = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const { id } = req.params;
+
+//     const result = await getQuickRequestResponseByIdService(organisationId, id);
+
+//     if (!result.success) {
+//       return res.status(404).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("getQuickRequestResponse error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // GET MY RESPONSES
+// // ============================================================
+
+// export const getMyQuickRequestResponses = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const userId = req.user.id || req.user.employee_id;
+
+//     if (!userId) {
+//       return res.status(401).json({ success: false, message: "User ID not found" });
+//     }
+
+//     const result = await getMyQuickRequestResponsesService(organisationId, userId);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("getMyQuickRequestResponses error:", err);
+//     return res.status(500).json({ success: false, message: err.message });
+//   }
+// };
+
+// // ============================================================
+// // UPDATE RESPONSE STATUS
+// // ============================================================
+
+// export const updateQuickRequestResponseStatus = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const reviewedBy = req.user.id || req.user.employee_id || null;
+//     const { id } = req.params;
+
+//     const {
+//       status,
+//       rejectionReason = null,
+//       approvalComment = null,
+//     } = req.body;
+
+//     const result = await updateQuickRequestResponseStatusService(
+//       organisationId,
+//       id,
+//       status,
+//       reviewedBy,
+//       rejectionReason,
+//       approvalComment
+//     );
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("updateQuickRequestResponseStatus error:", err);
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
+
+// // ============================================================
+// // SAVE ANNOUNCEMENT
+// // ============================================================
+
+// export const saveAnnouncementOnResponse = async (req, res) => {
+//   try {
+//     const organisationId = req.user.organisation_id;
+//     const { id } = req.params;
+//     const { content } = req.body;
+
+//     if (!content?.trim()) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Announcement content is required",
+//       });
+//     }
+
+//     const result = await saveAnnouncementOnResponseService(
+//       organisationId,
+//       id,
+//       content.trim()
+//     );
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     return res.json(result);
+//   } catch (err) {
+//     console.error("saveAnnouncementOnResponse error:", err);
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message,
+//     });
+//   }
+// };
 
 import {
   getAllQuickRequestsService,
@@ -12,24 +771,19 @@ import {
   getQuickRequestResponseByIdService,
   updateQuickRequestResponseStatusService,
   getMyQuickRequestResponsesService,
+  saveAnnouncementOnResponseService,
+  generateAnnouncementWithAIService,
+  getAvailabilityService,
 } from "../services/quickRequest.service.js";
 
 // ============================================================
 // GET ALL REQUEST TYPES
 // ============================================================
 
-export const getQuickRequests = async (
-  req,
-  res
-) => {
+export const getQuickRequests = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
-
-    const result =
-      await getAllQuickRequestsService(
-        organisationId
-      );
+    const organisationId = req.user.organisation_id;
+    const result = await getAllQuickRequestsService(organisationId);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -37,15 +791,8 @@ export const getQuickRequests = async (
 
     return res.json(result);
   } catch (err) {
-    console.error(
-      "getQuickRequests error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("getQuickRequests error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -53,21 +800,12 @@ export const getQuickRequests = async (
 // GET SINGLE REQUEST
 // ============================================================
 
-export const getQuickRequest = async (
-  req,
-  res
-) => {
+export const getQuickRequest = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
-
+    const organisationId = req.user.organisation_id;
     const { id } = req.params;
 
-    const result =
-      await getQuickRequestByIdService(
-        organisationId,
-        id
-      );
+    const result = await getQuickRequestByIdService(organisationId, id);
 
     if (!result.success) {
       return res.status(404).json(result);
@@ -75,15 +813,8 @@ export const getQuickRequest = async (
 
     return res.json(result);
   } catch (err) {
-    console.error(
-      "getQuickRequest error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("getQuickRequest error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -91,25 +822,12 @@ export const getQuickRequest = async (
 // CREATE REQUEST
 // ============================================================
 
-export const createQuickRequest = async (
-  req,
-  res
-) => {
+export const createQuickRequest = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
+    const organisationId = req.user.organisation_id;
+    const userId = req.user.id || req.user.employee_id || null;
 
-    const userId =
-      req.user.id ||
-      req.user.employee_id ||
-      null;
-
-    const result =
-      await createQuickRequestService(
-        organisationId,
-        req.body,
-        userId
-      );
+    const result = await createQuickRequestService(organisationId, req.body, userId);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -117,15 +835,8 @@ export const createQuickRequest = async (
 
     return res.status(201).json(result);
   } catch (err) {
-    console.error(
-      "createQuickRequest error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("createQuickRequest error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -133,22 +844,12 @@ export const createQuickRequest = async (
 // UPDATE REQUEST
 // ============================================================
 
-export const updateQuickRequest = async (
-  req,
-  res
-) => {
+export const updateQuickRequest = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
-
+    const organisationId = req.user.organisation_id;
     const { id } = req.params;
 
-    const result =
-      await updateQuickRequestService(
-        organisationId,
-        id,
-        req.body
-      );
+    const result = await updateQuickRequestService(organisationId, id, req.body);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -156,15 +857,8 @@ export const updateQuickRequest = async (
 
     return res.json(result);
   } catch (err) {
-    console.error(
-      "updateQuickRequest error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("updateQuickRequest error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -172,21 +866,12 @@ export const updateQuickRequest = async (
 // DELETE REQUEST
 // ============================================================
 
-export const deleteQuickRequest = async (
-  req,
-  res
-) => {
+export const deleteQuickRequest = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
-
+    const organisationId = req.user.organisation_id;
     const { id } = req.params;
 
-    const result =
-      await deleteQuickRequestService(
-        organisationId,
-        id
-      );
+    const result = await deleteQuickRequestService(organisationId, id);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -194,15 +879,8 @@ export const deleteQuickRequest = async (
 
     return res.json(result);
   } catch (err) {
-    console.error(
-      "deleteQuickRequest error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("deleteQuickRequest error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -210,23 +888,13 @@ export const deleteQuickRequest = async (
 // UPDATE REQUEST STATUS
 // ============================================================
 
-export const updateQuickRequestStatus = async (
-  req,
-  res
-) => {
+export const updateQuickRequestStatus = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
-
+    const organisationId = req.user.organisation_id;
     const { id } = req.params;
     const { status } = req.body;
 
-    const result =
-      await updateQuickRequestStatusService(
-        organisationId,
-        id,
-        status
-      );
+    const result = await updateQuickRequestStatusService(organisationId, id, status);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -234,15 +902,8 @@ export const updateQuickRequestStatus = async (
 
     return res.json(result);
   } catch (err) {
-    console.error(
-      "updateQuickRequestStatus error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("updateQuickRequestStatus error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -250,38 +911,23 @@ export const updateQuickRequestStatus = async (
 // SUBMIT RESPONSE
 // ============================================================
 
-export const submitQuickRequestResponse = async (
-  req,
-  res
-) => {
+export const submitQuickRequestResponse = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
-
-    const requestedBy =
-      req.user.id ||
-      req.user.employee_id;
-
+    const organisationId = req.user.organisation_id;
+    const requestedBy = req.user.id || req.user.employee_id;
     const { id } = req.params;
-
-    const {
-      answers = {},
-    } = req.body;
+    const { answers = {} } = req.body;
 
     if (!requestedBy) {
-      return res.status(401).json({
-        success: false,
-        message: "User ID not found",
-      });
+      return res.status(401).json({ success: false, message: "User ID not found" });
     }
 
-    const result =
-      await createQuickRequestResponseService(
-        organisationId,
-        id,
-        answers,
-        requestedBy
-      );
+    const result = await createQuickRequestResponseService(
+      organisationId,
+      id,
+      answers,
+      requestedBy
+    );
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -289,15 +935,8 @@ export const submitQuickRequestResponse = async (
 
     return res.status(201).json(result);
   } catch (err) {
-    console.error(
-      "submitQuickRequestResponse error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("submitQuickRequestResponse error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -305,18 +944,10 @@ export const submitQuickRequestResponse = async (
 // GET ALL RESPONSES
 // ============================================================
 
-export const getQuickRequestResponses = async (
-  req,
-  res
-) => {
+export const getQuickRequestResponses = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
-
-    const result =
-      await getAllQuickRequestResponsesService(
-        organisationId
-      );
+    const organisationId = req.user.organisation_id;
+    const result = await getAllQuickRequestResponsesService(organisationId);
 
     if (!result.success) {
       return res.status(400).json(result);
@@ -324,15 +955,8 @@ export const getQuickRequestResponses = async (
 
     return res.json(result);
   } catch (err) {
-    console.error(
-      "getQuickRequestResponses error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("getQuickRequestResponses error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
@@ -340,21 +964,12 @@ export const getQuickRequestResponses = async (
 // GET SINGLE RESPONSE
 // ============================================================
 
-export const getQuickRequestResponse = async (
-  req,
-  res
-) => {
+export const getQuickRequestResponse = async (req, res) => {
   try {
-    const organisationId =
-      req.user.organisation_id;
-
+    const organisationId = req.user.organisation_id;
     const { id } = req.params;
 
-    const result =
-      await getQuickRequestResponseByIdService(
-        organisationId,
-        id
-      );
+    const result = await getQuickRequestResponseByIdService(organisationId, id);
 
     if (!result.success) {
       return res.status(404).json(result);
@@ -362,22 +977,14 @@ export const getQuickRequestResponse = async (
 
     return res.json(result);
   } catch (err) {
-    console.error(
-      "getQuickRequestResponse error:",
-      err
-    );
-
-    return res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    console.error("getQuickRequestResponse error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
 // ============================================================
-// UPDATE RESPONSE STATUS
+// GET MY RESPONSES
 // ============================================================
-// controllers/quickRequest.controller.js
 
 export const getMyQuickRequestResponses = async (req, res) => {
   try {
@@ -401,6 +1008,10 @@ export const getMyQuickRequestResponses = async (req, res) => {
   }
 };
 
+// ============================================================
+// UPDATE RESPONSE STATUS
+// ============================================================
+
 export const updateQuickRequestResponseStatus = async (req, res) => {
   try {
     const organisationId = req.user.organisation_id;
@@ -410,7 +1021,7 @@ export const updateQuickRequestResponseStatus = async (req, res) => {
     const {
       status,
       rejectionReason = null,
-      approvalComment = null,   // ← add
+      approvalComment = null,
     } = req.body;
 
     const result = await updateQuickRequestResponseStatusService(
@@ -419,7 +1030,7 @@ export const updateQuickRequestResponseStatus = async (req, res) => {
       status,
       reviewedBy,
       rejectionReason,
-      approvalComment            // ← add
+      approvalComment
     );
 
     if (!result.success) {
@@ -433,5 +1044,94 @@ export const updateQuickRequestResponseStatus = async (req, res) => {
       success: false,
       message: err.message,
     });
+  }
+};
+
+// ============================================================
+// SAVE ANNOUNCEMENT
+// ============================================================
+
+export const saveAnnouncementOnResponse = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const { id } = req.params;
+    const { content } = req.body;
+
+    if (!content?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Announcement content is required",
+      });
+    }
+
+    const result = await saveAnnouncementOnResponseService(
+      organisationId,
+      id,
+      content.trim()
+    );
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.json(result);
+  } catch (err) {
+    console.error("saveAnnouncementOnResponse error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+// ============================================================
+// GENERATE ANNOUNCEMENT WITH AI
+// ============================================================
+
+export const generateAnnouncementWithAI = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const { id } = req.params;
+    const { tone = "formal" } = req.body;   // ← get tone from body
+
+    const result = await generateAnnouncementWithAIService(
+      organisationId,
+      id,
+      tone
+    );
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.json(result);
+  } catch (err) {
+    console.error("generateAnnouncementWithAI error:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+// ============================================================
+// GET AVAILABILITY
+// ============================================================
+export const getQuickRequestAvailability = async (req, res) => {
+  try {
+    const organisationId = req.user.organisation_id;
+    const { id } = req.params;
+    const { date } = req.query;
+
+    const result = await getAvailabilityService(organisationId, id, date);
+
+    if (!result.success) {
+      return res.status(400).json(result);
+    }
+
+    return res.json(result);
+  } catch (err) {
+    console.error("getQuickRequestAvailability error:", err);
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
