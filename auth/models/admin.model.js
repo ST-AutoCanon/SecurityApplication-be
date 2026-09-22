@@ -498,3 +498,32 @@ export const deleteUserById = async (client, organisationId, userId) => {
 
   return result.rows[0];
 };
+
+export const updateUserStatus = async (
+  client,
+  organisationId,
+  userId,
+  isActive,
+) => {
+  const result = await client.query(
+    `
+    UPDATE auth.users
+    SET
+      is_active = $1,
+      updated_at = NOW()
+    WHERE id = $2
+      AND organisation_id = $3
+    RETURNING
+      id,
+      first_name,
+      last_name,
+      email,
+      phone,
+      role,
+      is_active;
+    `,
+    [isActive, userId, organisationId],
+  );
+
+  return result.rows[0] || null;
+};

@@ -11,7 +11,7 @@ export const createSystemTables = async (db, schema) => {
       punch_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       apartment_number VARCHAR(50),
       vehicle_number VARCHAR(20),
-      gate_name VARCHAR(100),
+      gate_name VARCHAR(100)
     );
   `);
 

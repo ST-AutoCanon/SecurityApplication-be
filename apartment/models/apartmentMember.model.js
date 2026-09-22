@@ -255,36 +255,60 @@ export const updateApartmentMember = async (
 /**
  * Delete Apartment Member
  */
+// export const deleteApartmentMember = async (
+//   client,
+//   schemaName,
+//   memberId
+// )=>{
+
+
+//   schemaName =
+//     validateSchema(schemaName);
+
+
+
+//   const result =
+//     await client.query(
+//       `
+//       DELETE FROM "${schemaName}".apartment_member
+
+//       WHERE id=$1
+
+//       RETURNING id;
+//       `,
+//       [
+//         memberId
+//       ]
+//     );
+
+
+
+//   return result.rows[0];
+
+// };
+
+// also delete the auth model user if the apartment member has a linked user account
+
+
 export const deleteApartmentMember = async (
   client,
   schemaName,
-  memberId
-)=>{
+  memberId,
+) => {
+  schemaName = validateSchema(schemaName);
 
-
-  schemaName =
-    validateSchema(schemaName);
-
-
-
-  const result =
-    await client.query(
-      `
+  const result = await client.query(
+    `
       DELETE FROM "${schemaName}".apartment_member
+      WHERE id = $1
+      RETURNING
+        id,
+        security_user_id;
+    `,
+    [memberId],
+  );
 
-      WHERE id=$1
-
-      RETURNING id;
-      `,
-      [
-        memberId
-      ]
-    );
-
-
-
-  return result.rows[0];
-
+  return result.rows[0] || null;
 };
 
 
@@ -297,43 +321,74 @@ export const deleteApartmentMember = async (
 /**
  * Update Apartment Member Status
  */
+// export const updateApartmentMemberStatus = async (
+//   client,
+//   schemaName,
+//   memberId,
+//   status
+// )=>{
+
+
+//   schemaName =
+//     validateSchema(schemaName);
+
+
+
+//   const result =
+//     await client.query(
+//       `
+//       UPDATE "${schemaName}".apartment_member
+
+//       SET
+
+//       status=$1,
+//       updated_at=NOW()
+
+//       WHERE id=$2
+
+//       RETURNING id,status;
+//       `,
+//       [
+//         status,
+//         memberId
+//       ]
+//     );
+
+
+
+//   return result.rows[0];
+
+// };
+
+
+// it will also update the auth model user is_active status if the apartment member has a linked user account
+
+
+
 export const updateApartmentMemberStatus = async (
   client,
   schemaName,
   memberId,
-  status
-)=>{
+  status,
+) => {
+  schemaName = validateSchema(schemaName);
 
-
-  schemaName =
-    validateSchema(schemaName);
-
-
-
-  const result =
-    await client.query(
-      `
+  const result = await client.query(
+    `
       UPDATE "${schemaName}".apartment_member
-
       SET
-
-      status=$1,
-      updated_at=NOW()
-
-      WHERE id=$2
-
-      RETURNING id,status;
-      `,
-      [
+        status = $1,
+        updated_at = NOW()
+      WHERE id = $2
+      RETURNING
+        id,
         status,
-        memberId
-      ]
-    );
+        security_user_id;
+    `,
+    [status, memberId],
+  );
 
-
-
-  return result.rows[0];
-
+  return result.rows[0] || null;
 };
 
 

@@ -154,16 +154,24 @@ export const deleteMember = async (req, res) => {
 /**
  * Update Member Status
  */
+
 export const updateMemberStatus = async (req, res) => {
   try {
     const organisationId = req.user.organisation_id;
-
     const { id } = req.params;
+    const { status } = req.body;
+
+    if (typeof status !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "Status must be true or false",
+      });
+    }
 
     const result = await ApartmentService.updateMemberStatusService(
       organisationId,
       id,
-      req.body.status,
+      status,
     );
 
     return res.status(result.success ? 200 : 400).json(result);
@@ -176,6 +184,7 @@ export const updateMemberStatus = async (req, res) => {
     });
   }
 };
+
 
 /**
  * Search Members
