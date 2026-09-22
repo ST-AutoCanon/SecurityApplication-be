@@ -85,7 +85,16 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
      * CREATE MEMBERS
      * =====================================
      */
+    // for (const row of members) {
     for (const row of members) {
+      // Skip the sample/template row
+      if (
+        row.member_code === "M001" &&
+        row.first_name === "John" &&
+        row.last_name === "Smith"
+      ) {
+        continue;
+      }
       const memberData = {
         security_user_id: row.security_user_id || null,
 
@@ -135,7 +144,6 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
 
         status: row.status ?? true,
       };
-
 
       const codeExist = await MemberModel.checkMemberCodeExists(
         client,

@@ -854,90 +854,154 @@ export const updateMemberService = async (
 /**
  * Delete Member
  */
+// export const deleteMemberService = async (
+//   organisationId,
+//   memberId
+// )=>{
+
+
+//   const schemaName =
+//     await getSchemaName(organisationId);
+
+
+
+//   const client =
+//     await firstDB.connect();
+
+
+
+//   try{
+
+
+//     await client.query("BEGIN");
+
+
+
+//     const deletedMember =
+//       await MemberModel.deleteApartmentMember(
+//         client,
+//         schemaName,
+//         memberId
+//       );
+
+
+
+//     if(!deletedMember){
+
+//       await client.query("ROLLBACK");
+
+
+//       return {
+
+//         success:false,
+//         message:"Member not found"
+
+//       };
+
+//     }
+
+
+
+//     await client.query("COMMIT");
+
+
+
+//     return {
+
+//       success:true,
+//       message:"Apartment member deleted successfully"
+
+//     };
+
+
+
+//   }catch(error){
+
+
+//     await client.query("ROLLBACK");
+
+
+//     return {
+
+//       success:false,
+//       message:error.message
+
+//     };
+
+
+//   }finally{
+
+
+//     client.release();
+
+//   }
+
+// };
+
+
+
 export const deleteMemberService = async (
   organisationId,
-  memberId
-)=>{
+  memberId,
+) => {
+  const schemaName = await getSchemaName(organisationId);
 
+  const apartmentClient = await firstDB.connect();
 
-  const schemaName =
-    await getSchemaName(organisationId);
-
-
-
-  const client =
-    await firstDB.connect();
-
-
-
-  try{
-
-
-    await client.query("BEGIN");
-
-
+  try {
+    await apartmentClient.query("BEGIN");
 
     const deletedMember =
       await MemberModel.deleteApartmentMember(
-        client,
+        apartmentClient,
         schemaName,
-        memberId
+        memberId,
       );
 
-
-
-    if(!deletedMember){
-
-      await client.query("ROLLBACK");
-
+    if (!deletedMember) {
+      await apartmentClient.query("ROLLBACK");
 
       return {
-
-        success:false,
-        message:"Member not found"
-
+        success: false,
+        message: "Member not found",
+        data: null,
       };
-
     }
 
+    await apartmentClient.query("COMMIT");
 
+    // Delete corresponding auth user
+    if (deletedMember.security_user_id) {
+      const authClient = await masterAuthDB.connect();
 
-    await client.query("COMMIT");
-
-
-
-    return {
-
-      success:true,
-      message:"Apartment member deleted successfully"
-
-    };
-
-
-
-  }catch(error){
-
-
-    await client.query("ROLLBACK");
-
+      try {
+        await AdminModel.deleteUserById(
+          authClient,
+          organisationId,
+          deletedMember.security_user_id,
+        );
+      } finally {
+        authClient.release();
+      }
+    }
 
     return {
-
-      success:false,
-      message:error.message
-
+      success: true,
+      message: "Apartment member deleted successfully",
+      data: deletedMember,
     };
+  } catch (error) {
+    await apartmentClient.query("ROLLBACK").catch(() => {});
 
-
-  }finally{
-
-
-    client.release();
-
+    return {
+      success: false,
+      message: error.message || "Failed to delete apartment member",
+      data: null,
+    };
+  } finally {
+    apartmentClient.release();
   }
-
 };
-
 
 
 
@@ -947,94 +1011,165 @@ export const deleteMemberService = async (
 /**
  * Update Member Status
  */
+// export const updateMemberStatusService = async (
+//   organisationId,
+//   memberId,
+//   status
+// )=>{
+
+
+//   const schemaName =
+//     await getSchemaName(organisationId);
+
+
+
+//   const client =
+//     await firstDB.connect();
+
+
+
+//   try{
+
+
+//     await client.query("BEGIN");
+
+
+
+//     const updatedMember =
+//       await MemberModel.updateApartmentMemberStatus(
+//         client,
+//         schemaName,
+//         memberId,
+//         status
+//       );
+
+
+
+//     if(!updatedMember){
+
+//       await client.query("ROLLBACK");
+
+
+//       return {
+
+//         success:false,
+//         message:"Member not found"
+
+//       };
+
+//     }
+
+
+
+
+//     await client.query("COMMIT");
+
+
+
+//     return {
+
+//       success:true,
+//       message:"Member status updated successfully",
+//       data:updatedMember
+
+//     };
+
+
+
+//   }catch(error){
+
+
+//     await client.query("ROLLBACK");
+
+
+//     return {
+
+//       success:false,
+//       message:error.message
+
+//     };
+
+
+//   }finally{
+
+
+//     client.release();
+
+//   }
+
+// };
+
+
+//////////////////
+
+
 export const updateMemberStatusService = async (
   organisationId,
   memberId,
-  status
-)=>{
+  status,
+) => {
+  const schemaName = await getSchemaName(organisationId);
 
+  const apartmentClient = await firstDB.connect();
 
-  const schemaName =
-    await getSchemaName(organisationId);
+  try {
+    await apartmentClient.query("BEGIN");
 
+    const updatedMember = await MemberModel.updateApartmentMemberStatus(
+      apartmentClient,
+      schemaName,
+      memberId,
+      status,
+    );
 
-
-  const client =
-    await firstDB.connect();
-
-
-
-  try{
-
-
-    await client.query("BEGIN");
-
-
-
-    const updatedMember =
-      await MemberModel.updateApartmentMemberStatus(
-        client,
-        schemaName,
-        memberId,
-        status
-      );
-
-
-
-    if(!updatedMember){
-
-      await client.query("ROLLBACK");
-
+    if (!updatedMember) {
+      await apartmentClient.query("ROLLBACK");
 
       return {
-
-        success:false,
-        message:"Member not found"
-
+        success: false,
+        message: "Member not found",
+        data: null,
       };
-
     }
 
+    await apartmentClient.query("COMMIT");
 
+    if (updatedMember.security_user_id) {
+      const isActive = status;
 
+      const authClient = await masterAuthDB.connect();
 
-    await client.query("COMMIT");
-
-
-
-    return {
-
-      success:true,
-      message:"Member status updated successfully",
-      data:updatedMember
-
-    };
-
-
-
-  }catch(error){
-
-
-    await client.query("ROLLBACK");
-
+      try {
+        await AdminModel.updateUserStatus(
+          authClient,
+          organisationId,
+          updatedMember.security_user_id,
+          isActive,
+        );
+      } finally {
+        authClient.release();
+      }
+    }
 
     return {
-
-      success:false,
-      message:error.message
-
+      success: true,
+      message: "Member status updated successfully",
+      data: updatedMember,
     };
+  } catch (error) {
+    console.error("UPDATE MEMBER STATUS ERROR:", error);
 
+    await apartmentClient.query("ROLLBACK").catch(() => {});
 
-  }finally{
-
-
-    client.release();
-
+    return {
+      success: false,
+      message: error.message || "Failed to update member status",
+      data: null,
+    };
+  } finally {
+    apartmentClient.release();
   }
-
 };
-
 
 
 
