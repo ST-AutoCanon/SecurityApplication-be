@@ -433,9 +433,6 @@ export const updateDynamicTableService = async (payload) => {
     // 10. UPDATE METADATA (TRUE DIFF FIX)
     // -------------------------------------------------
 
-    // ❌ OLD WRONG LOGIC (removed completely)
-    // deleteDynamicTableFields(...actuallyRemoved)
-    // createDynamicTableFields(...selectedFields)
 
     // ✅ NEW CORRECT LOGIC
 

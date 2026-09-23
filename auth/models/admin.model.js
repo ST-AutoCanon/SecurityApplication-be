@@ -129,6 +129,64 @@ export const getTables = async (client, schemaName) => {
   return result.rows;
 };
 
+// export const getTableData = async (client, schemaName, tableName) => {
+//   const result = await client.query(`
+//     SELECT *,
+//            '${schemaName}' AS organisation_schema
+//     FROM "${schemaName}"."${tableName}"
+//   `);
+
+//   const filteredRows = result.rows.map(
+//     ({ organisation_schema, face_descriptor, ...rest }) => {
+//       if (rest.profile_photo) {
+//         rest.profile_photo = `${process.env.BASE_URL}/${rest.profile_photo}`;
+//       }
+
+//       if (rest.punch_time instanceof Date) {
+//         rest.punch_time = rest.punch_time.toLocaleString("en-IN", {
+//           timeZone: "Asia/Kolkata",
+//           year: "numeric",
+//           month: "2-digit",
+//           day: "2-digit",
+//           hour: "2-digit",
+//           minute: "2-digit",
+//           second: "2-digit",
+//           hour12: true,
+//         });
+//       }
+
+//       return rest;
+//     },
+//   );
+
+//   return filteredRows;
+// };
+
+
+
+const formatIndianDateTime = (date) => {
+  if (!(date instanceof Date)) {
+    return date;
+  }
+
+  const parts = new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  }).formatToParts(date);
+
+  const get = (type) => {
+    return parts.find((part) => part.type === type)?.value;
+  };
+
+  return `${get("day")}/${get("month")}/${get("year")} ${get("hour")}:${get("minute")}:${get("second")} ${get("dayPeriod")}`;
+};
+
 export const getTableData = async (client, schemaName, tableName) => {
   const result = await client.query(`
     SELECT *,
@@ -138,21 +196,24 @@ export const getTableData = async (client, schemaName, tableName) => {
 
   const filteredRows = result.rows.map(
     ({ organisation_schema, face_descriptor, ...rest }) => {
+      // Format profile photo URL
       if (rest.profile_photo) {
         rest.profile_photo = `${process.env.BASE_URL}/${rest.profile_photo}`;
       }
 
+      // Format punch_time as DD/MM/YYYY HH:MM:SS AM/PM
       if (rest.punch_time instanceof Date) {
-        rest.punch_time = rest.punch_time.toLocaleString("en-IN", {
-          timeZone: "Asia/Kolkata",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        });
+        rest.punch_time = formatIndianDateTime(rest.punch_time);
+      }
+
+      // Format created_at
+      if (rest.created_at instanceof Date) {
+        rest.created_at = formatIndianDateTime(rest.created_at);
+      }
+
+      // Format updated_at
+      if (rest.updated_at instanceof Date) {
+        rest.updated_at = formatIndianDateTime(rest.updated_at);
       }
 
       return rest;
@@ -161,6 +222,8 @@ export const getTableData = async (client, schemaName, tableName) => {
 
   return filteredRows;
 };
+
+
 
 export const getSecurityUsers = async (client, organisationId) => {
   const result = await client.query(
@@ -317,6 +380,8 @@ export const activateSecurityUser = async (client, organisationId, userId) => {
 
 // buinsess data
 
+
+
 export const updateBusinessData = async (
   client,
   schemaName,
@@ -324,17 +389,27 @@ export const updateBusinessData = async (
   id,
   data,
 ) => {
-  const keys = Object.keys(data);
+  const { created_at, updated_at, ...updateData } = data;
+
+  const keys = Object.keys(updateData);
+
+  if (keys.length === 0) {
+    return null;
+  }
 
   const setClause = keys
     .map((key, index) => `"${key}" = $${index + 1}`)
     .join(", ");
 
-  const values = [...keys.map((key) => data[key]), id];
+  const values = keys.map((key) => updateData[key]);
+
+  values.push(id);
 
   const query = `
     UPDATE "${schemaName}"."${tableName}"
-    SET ${setClause}
+    SET
+      ${setClause},
+      updated_at = CURRENT_TIMESTAMP
     WHERE id = $${values.length}
     RETURNING *;
   `;
