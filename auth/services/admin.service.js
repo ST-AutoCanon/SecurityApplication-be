@@ -156,42 +156,6 @@ export const fetchAllBusinessData = async (
 };
 
 
-// export const updateBusinessData = async (
-//   client,
-//   schemaName,
-//   table,
-//   id,
-//   body,
-// ) => {
-//   return await model.updateBusinessData(client, schemaName, table, id, body);
-// };
-
-// export const getBusinessDataById = async (
-//   businessClient,
-//   schemaName,
-//   table,
-//   id,
-// ) => {
-//   return await model.getBusinessDataById(
-//     businessClient,
-//     schemaName,
-//     table,
-//     id,
-//   );
-// };
-
-// export const deactivateBusinessData = async (client, schemaName, table, id) => {
-//   return await model.deactivateBusinessData(client, schemaName, table, id);
-// };
-
-// export const activateBusinessData = async (client, schemaName, table, id) => {
-//   return await model.activateBusinessData(client, schemaName, table, id);
-// };
-
-
-// export const deleteBusinessData = async (client, schemaName, table, id) => {
-//   return await model.deleteBusinessData(client, schemaName, table, id);
-// };
 
 
 
