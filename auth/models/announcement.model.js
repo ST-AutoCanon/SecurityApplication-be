@@ -153,3 +153,48 @@ export const deleteAnnouncement = async (
 
   return result.rows[0] || null;
 };
+export const updateAnnouncement = async (
+  client,
+  schemaName,
+  organisationId,
+  id,
+  title,
+  message,
+  priority,
+  expiresAt
+) => {
+  const query = `
+    UPDATE "${schemaName}".announcements
+    SET
+      title = $1,
+      message = $2,
+      priority = $3,
+      expires_at = $4
+    WHERE id = $5
+      AND organisation_id = $6
+      AND is_active = TRUE
+    RETURNING
+      id,
+      organisation_id,
+      title,
+      message,
+      priority,
+      created_by,
+      created_at,
+      expires_at,
+      is_active
+  `;
+
+  const values = [
+    title,
+    message,
+    priority,
+    expiresAt || null,
+    id,
+    organisationId,
+  ];
+
+  const result = await client.query(query, values);
+
+  return result.rows[0] || null;
+};

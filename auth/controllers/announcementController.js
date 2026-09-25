@@ -397,3 +397,104 @@ export const deleteAnnouncement = async (
     }
   }
 };
+
+
+export const updateAnnouncement = async (req, res) => {
+  let client;
+
+  try {
+    const { id } = req.params;
+
+    const {
+      title,
+      message,
+      priority,
+      expiresAt,
+    } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Announcement ID is required",
+      });
+    }
+
+    if (!title?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Title is required",
+      });
+    }
+
+    if (!message?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Message is required",
+      });
+    }
+
+    const organisationId =
+      req.user?.organisation_id;
+
+      
+      const orgType = (
+  req.user?.org_type ||
+  req.user?.orgType ||
+  ""
+).toLowerCase();
+
+    if (!organisationId) {
+      return res.status(400).json({
+        success: false,
+        message: "Organisation ID not found",
+      });
+    }
+
+    const schemaName = `org_${String(
+      organisationId
+    ).padStart(3, "0")}`;
+
+    client = await getBusinessDB(orgType).connect();
+
+    const updatedAnnouncement =
+      await model.updateAnnouncement(
+        client,
+        schemaName,
+        organisationId,
+        Number(id),
+        title.trim(),
+        message.trim(),
+        priority || "Notice",
+        expiresAt || null
+      );
+
+    if (!updatedAnnouncement) {
+      return res.status(404).json({
+        success: false,
+        message: "Announcement not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Announcement updated successfully",
+      data: updatedAnnouncement,
+    });
+  } catch (error) {
+    console.error(
+      "UPDATE ANNOUNCEMENT ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update announcement",
+      error: error.message,
+    });
+  } finally {
+    if (client) {
+      client.release();
+    }
+  }
+};
+

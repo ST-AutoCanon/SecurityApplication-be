@@ -5,6 +5,7 @@ import {
   createAnnouncement,
   getAnnouncements,
   deleteAnnouncement,
+  updateAnnouncement,
 } from "../controllers/announcementController.js";
 
 
@@ -64,5 +65,10 @@ router.delete(
 
 
 
+
+router.put(
+  "/:id",
+  updateAnnouncement
+);
 
 export default router;
