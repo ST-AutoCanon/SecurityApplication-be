@@ -20,6 +20,8 @@ import {
   getMyFlatVisitorStats,
 } from "../controllers/userVisitor.controller.js";
 
+import requestAnnouncementRoutes from "./requestAnnouncement.routes.js";
+
 const router = express.Router();
 // // TEST
 // router.get("/test", (req, res) => {
@@ -122,4 +124,9 @@ router.get(
   getMyFlatVisitors
 );
 router.get( "/visitor-stats", auth, getMyFlatVisitorStats );
+
+router.use(
+  "/request-announcements",
+  requestAnnouncementRoutes
+);
 export default router;
