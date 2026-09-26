@@ -1,18 +1,537 @@
+// import format from "pg-format";
+
+// import masterAuthDB from "../../config/masterAuthDB.js";
+
+// import apartmentDB from "../../config/dborgap.js";
+// import hospitalDB from "../../config/dborghospital.js";
+// import eventDB from "../../config/dborgevent.js";
+
+// import * as model from "../models/dynamicTable.model.js";
+
+// import { buildCreateTableQuery } from "../utils/createDynamicTable.js";
+// import { syncTemplateToBusinessDB } from "./syncTemplate.service.js";
+
+// /* -------------------------------------------------------------------------- */
+// /*                             GET BUSINESS DB                                */
+// /* -------------------------------------------------------------------------- */
+
+// const getDB = (orgType) => {
+//   switch ((orgType || "").toUpperCase()) {
+//     case "APARTMENT":
+//       return apartmentDB;
+
+//     case "HOSPITAL":
+//       return hospitalDB;
+
+//     case "EVENT":
+//       return eventDB;
+
+//     default:
+//       throw new Error(`Unsupported organisation type: ${orgType}`);
+//   }
+// };
+
+// /* -------------------------------------------------------------------------- */
+// /*                              GET TEMPLATES                                 */
+// /* -------------------------------------------------------------------------- */
+
+// export const getTemplatesService = async () => {
+//   const templates = await model.getTemplates();
+
+//   return {
+//     success: true,
+//     data: templates,
+//   };
+// };
+
+// /* -------------------------------------------------------------------------- */
+// /*                           GET TEMPLATE FIELDS                              */
+// /* -------------------------------------------------------------------------- */
+
+// export const getTemplateFieldsService = async (templateId) => {
+//   const client = await masterAuthDB.connect();
+
+//   try {
+//     const template = await model.getTemplateById(client, templateId);
+
+//     if (!template) {
+//       return {
+//         success: false,
+//         message: "Template not found",
+//       };
+//     }
+
+//     const fields = await model.getTemplateFields(client, templateId);
+
+//     return {
+//       success: true,
+//       data: fields,
+//     };
+//   } finally {
+//     client.release();
+//   }
+// };
+
+// /* -------------------------------------------------------------------------- */
+// /*                         CREATE DYNAMIC TABLE                               */
+// /* -------------------------------------------------------------------------- */
+
+// export const createDynamicTableService = async (payload) => {
+//   const client = await masterAuthDB.connect();
+
+//   try {
+//     await client.query("BEGIN");
+
+//     const organisation = await model.getOrganisation(
+//       client,
+//       payload.organisationId,
+//     );
+
+//     if (!organisation) {
+//       await client.query("ROLLBACK");
+
+//       return {
+//         success: false,
+//         message: "Organisation not found",
+//       };
+//     }
+
+//     const template = await model.getTemplateById(client, payload.templateId);
+
+//     if (!template) {
+//       await client.query("ROLLBACK");
+
+//       return {
+//         success: false,
+//         message: "Template not found",
+//       };
+//     }
+
+//     const duplicate = await model.getDynamicTableByName(
+//       client,
+//       payload.organisationId,
+//       payload.tableName,
+//     );
+
+//     if (duplicate) {
+//       await client.query("ROLLBACK");
+
+//       return {
+//         success: false,
+//         message: "Table already exists",
+//       };
+//     }
+
+//     const templateFields = await model.getTemplateFields(
+//       client,
+//       payload.templateId,
+//     );
+
+//     const selectedFields = templateFields.filter((field) =>
+//       payload.fields.includes(field.field_key),
+//     );
+//     console.log(payload.fields);
+//     if (!selectedFields.length) {
+//       await client.query("ROLLBACK");
+
+//       return {
+//         success: false,
+//         message: "No fields selected",
+//       };
+//     }
+
+//     const sql = buildCreateTableQuery({
+//       schemaName: organisation.schema_name,
+//       tableName: payload.tableName,
+//       fields: selectedFields,
+//     });
+
+//     const businessDB = getDB(organisation.org_type);
+
+//     await businessDB.query(sql);
+// const hasFaceDescriptor = selectedFields.some(
+//   (field) => field.field_key === "face_descriptor",
+// );
+
+// if (hasFaceDescriptor) {
+//   const indexQuery = format(
+//     `CREATE INDEX IF NOT EXISTS %I
+//      ON %I.%I
+//      USING hnsw (face_descriptor vector_cosine_ops)`,
+//     `${payload.tableName}_face_descriptor_hnsw_idx`,
+//     organisation.schema_name,
+//     payload.tableName,
+//   );
+
+//   await businessDB.query(indexQuery);
+// }
+
+//     const dynamicTable = await model.createDynamicTable(client, {
+//       organisationId: organisation.id,
+//       templateId: payload.templateId,
+//       tableName: payload.tableName,
+//       displayName: payload.displayName,
+//       schemaName: organisation.schema_name,
+//       createdBy: payload.createdBy,
+//     });
+
+//     await model.createDynamicTableFields(
+//       client,
+//       dynamicTable.id,
+//       selectedFields,
+//     );
+
+//     await client.query("COMMIT");
+
+//     return {
+//       success: true,
+//       message: "Dynamic table created successfully",
+//       data: dynamicTable,
+//     };
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+
+//     console.error(error);
+
+//     return {
+//       success: false,
+//       message: error.message,
+//     };
+//   } finally {
+//     client.release();
+//   }
+// };
+
+// export const getDynamicTableConfigurationService = async (
+//   organisationId,
+//   templateId,
+// ) => {
+//   const client = await masterAuthDB.connect();
+
+//   try {
+//     const config = await model.getDynamicTableConfiguration(
+//       client,
+//       organisationId,
+//       templateId,
+//     );
+
+//     if (!config.length) {
+//       return {
+//         success: true,
+//         exists: false,
+//       };
+//     }
+
+//     return {
+//       success: true,
+//       exists: true,
+//       displayName: config[0].display_name,
+//       selectedFields: config.map((row) => row.field_key),
+//     };
+//   } finally {
+//     client.release();
+//   }
+// };
+
+// export const updateDynamicTableService = async (payload) => {
+//   const client = await masterAuthDB.connect();
+
+//   try {
+//     await client.query("BEGIN");
+
+//     // -------------------------------------------------
+//     // 1. Validate organisation
+//     // -------------------------------------------------
+//     const organisation = await model.getOrganisation(
+//       client,
+//       payload.organisationId,
+//     );
+
+//     if (!organisation) {
+//       await client.query("ROLLBACK");
+//       return {
+//         success: false,
+//         message: "Organisation not found",
+//       };
+//     }
+
+//     // -------------------------------------------------
+//     // 2. Get template + table
+//     // -------------------------------------------------
+//     const templateFields = await model.getTemplateFields(
+//       client,
+//       payload.templateId,
+//     );
+
+//     const existingTable = await model.getDynamicTableByName(
+//       client,
+//       payload.organisationId,
+//       payload.tableName,
+//     );
+
+//     if (!existingTable) {
+//       await client.query("ROLLBACK");
+//       return {
+//         success: false,
+//         message: "Dynamic table not found",
+//       };
+//     }
+
+//     // -------------------------------------------------
+//     // 3. Resolve selected field objects
+//     // -------------------------------------------------
+//     const selectedFields = templateFields.filter((field) =>
+//       payload.fields.includes(field.field_key),
+//     );
+
+//     if (!selectedFields.length) {
+//       await client.query("ROLLBACK");
+//       return {
+//         success: false,
+//         message: "No valid fields selected",
+//       };
+//     }
+
+//     const selectedFieldKeys = selectedFields.map((f) => f.field_key);
+
+//     // -------------------------------------------------
+//     // 4. Get business DB + existing columns
+//     // -------------------------------------------------
+//     const businessDB = getDB(organisation.org_type);
+
+//     const existingColumns = await model.getExistingTableColumns(
+//       businessDB,
+//       organisation.schema_name,
+//       payload.tableName,
+//     );
+
+//     const SYSTEM_COLUMNS = new Set(["id"]);
+
+//     const existingSet = new Set(existingColumns);
+
+//     const selectedSet = new Set(selectedFieldKeys);
+
+//     // -------------------------------------------------
+//     // 5. Git-style DIFF ENGINE
+//     // -------------------------------------------------
+
+//     const toAdd = selectedFieldKeys.filter((f) => !existingSet.has(f));
+
+//     const toRemove = existingColumns.filter(
+//       (col) => !SYSTEM_COLUMNS.has(col) && !selectedSet.has(col),
+//     );
+
+//     // -------------------------------------------------
+//     // 6. If no changes → exit early
+//     // -------------------------------------------------
+//     if (toAdd.length === 0 && toRemove.length === 0) {
+//       await client.query("COMMIT");
+
+//       return {
+//         success: true,
+//         message: "No schema changes required",
+//         addedFields: [],
+//         removedFields: [],
+//       };
+//     }
+
+//     // -------------------------------------------------
+//     // 7. Helpers
+//     // -------------------------------------------------
+//     const isSafeName = (name) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name);
+
+//     const ALLOWED_TYPES = new Set([
+//       "text",
+//       "integer",
+//       "boolean",
+//       "timestamp",
+//       "varchar",
+//       "jsonb",
+//       "array",
+//       "date",
+//       "bigint",
+//       "numeric",
+//       "double precision",
+//       "double precision[]",
+//       "vector(512)",
+//     ]);
+
+//     const addedFields = [];
+//     const removedFields = [];
+
+//     // -------------------------------------------------
+//     // 8. ADD new columns (only new ones)
+//     // -------------------------------------------------
+//     for (const fieldKey of toAdd) {
+//       const field = templateFields.find((f) => f.field_key === fieldKey);
+
+//       if (!field) continue;
+
+//       if (!isSafeName(field.field_key)) {
+//         throw new Error(`Invalid field name: ${field.field_key}`);
+//       }
+
+//       const type = field.sql_type.trim().toLowerCase();
+
+//       const validType =
+//         ALLOWED_TYPES.has(type) || /^varchar\(\d+\)$/i.test(type);
+
+//       if (!validType) {
+//         throw new Error(`Invalid SQL type: ${field.sql_type}`);
+//       }
+
+//       const alterQuery = format(
+//         `ALTER TABLE %I.%I ADD COLUMN IF NOT EXISTS %I %s`,
+//         organisation.schema_name,
+//         payload.tableName,
+//         field.field_key,
+//         field.sql_type,
+//       );
+
+//       await businessDB.query(alterQuery);
+
+//       addedFields.push(field.field_key);
+//     }
+
+//     // 8.5 CREATE HNSW INDEX (if face_descriptor added)
+//     // -------------------------------------------------
+//     if (toAdd.includes("face_descriptor")) {
+//       const indexQuery = format(
+//         `CREATE INDEX IF NOT EXISTS %I
+//      ON %I.%I
+//      USING hnsw (face_descriptor vector_cosine_ops)`,
+//         `${payload.tableName}_face_descriptor_hnsw_idx`,
+//         organisation.schema_name,
+//         payload.tableName,
+//       );
+
+//       await businessDB.query(indexQuery);
+//     }
+
+//     // -------------------------------------------------
+//     // 9. REMOVE columns (only removed ones)
+//     // -------------------------------------------------
+//     for (const column of toRemove) {
+//       if (!isSafeName(column)) {
+//         throw new Error(`Invalid column name: ${column}`);
+//       }
+
+//       const dropQuery = format(
+//         `ALTER TABLE %I.%I DROP COLUMN IF EXISTS %I`,
+//         organisation.schema_name,
+//         payload.tableName,
+//         column,
+//       );
+
+//       await businessDB.query(dropQuery);
+
+//       removedFields.push(column);
+//     }
+
+//     // -------------------------------------------------
+//     // 10. UPDATE METADATA (TRUE DIFF FIX)
+//     // -------------------------------------------------
+
+//     // ✅ NEW CORRECT LOGIC
+
+//     // delete only removed mappings
+//     await model.deleteDynamicTableFields(client, existingTable.id, toRemove);
+
+//     // insert only new mappings
+//     const newFieldObjects = templateFields.filter((f) =>
+//       toAdd.includes(f.field_key),
+//     );
+
+//     if (newFieldObjects.length > 0) {
+//       await model.createDynamicTableFields(
+//         client,
+//         existingTable.id,
+//         newFieldObjects,
+//       );
+//     }
+
+//     // -------------------------------------------------
+//     // 11. Commit
+//     // -------------------------------------------------
+//     await client.query("COMMIT");
+
+//     // -------------------------------------------------
+//     // 12. Sync Business DB
+//     // -------------------------------------------------
+//     await syncTemplateToBusinessDB(payload.organisationId, payload.templateId);
+
+//     return {
+//       success: true,
+//       message: "Dynamic Form updated successfully",
+//       addedFields,
+//       removedFields,
+//       skippedFields: payload.fields.filter((f) => !addedFields.includes(f)),
+//     };
+//   } catch (error) {
+//     await client.query("ROLLBACK");
+
+//     return {
+//       success: false,
+//       message: error.message,
+//     };
+//   } finally {
+//     client.release();
+//   }
+// };
+
+// export const fetchAllBusinessData = async (client) => {
+//   const schemas = await getOrganisationSchemas(client);
+
+//   const output = {};
+
+//   for (const { schema_name } of schemas) {
+//     const tables = await getTables(client, schema_name);
+
+//     for (const { table_name } of tables) {
+//       try {
+//         const rows = await getTableData(client, schema_name, table_name);
+
+//         if (!output[table_name]) {
+//           output[table_name] = [];
+//         }
+
+//         output[table_name].push(...rows);
+//       } catch (err) {
+//         console.log(err.message);
+//       }
+//     }
+//   }
+
+//   const result = {};
+
+//   for (const tableName in output) {
+//     result[tableName] = {
+//       columns: Object.keys(output[tableName][0] ?? {}),
+//       rows: output[tableName],
+//     };
+//   }
+
+//   return result;
+// };
+
 import format from "pg-format";
 
 import masterAuthDB from "../../config/masterAuthDB.js";
 
 import apartmentDB from "../../config/dborgap.js";
+
 import hospitalDB from "../../config/dborghospital.js";
+
 import eventDB from "../../config/dborgevent.js";
 
 import * as model from "../models/dynamicTable.model.js";
 
 import { buildCreateTableQuery } from "../utils/createDynamicTable.js";
+
 import { syncTemplateToBusinessDB } from "./syncTemplate.service.js";
 
 /* -------------------------------------------------------------------------- */
-/*                             GET BUSINESS DB                                */
+/*                                GET BUSINESS DB                             */
 /* -------------------------------------------------------------------------- */
 
 const getDB = (orgType) => {
@@ -82,6 +601,10 @@ export const createDynamicTableService = async (payload) => {
   try {
     await client.query("BEGIN");
 
+    /* ---------------------------------------------------------------------- */
+    /* 1. Validate organisation                                              */
+    /* ---------------------------------------------------------------------- */
+
     const organisation = await model.getOrganisation(
       client,
       payload.organisationId,
@@ -96,6 +619,10 @@ export const createDynamicTableService = async (payload) => {
       };
     }
 
+    /* ---------------------------------------------------------------------- */
+    /* 2. Validate template                                                   */
+    /* ---------------------------------------------------------------------- */
+
     const template = await model.getTemplateById(client, payload.templateId);
 
     if (!template) {
@@ -106,6 +633,10 @@ export const createDynamicTableService = async (payload) => {
         message: "Template not found",
       };
     }
+
+    /* ---------------------------------------------------------------------- */
+    /* 3. Duplicate table check                                               */
+    /* ---------------------------------------------------------------------- */
 
     const duplicate = await model.getDynamicTableByName(
       client,
@@ -122,15 +653,38 @@ export const createDynamicTableService = async (payload) => {
       };
     }
 
+    /* ---------------------------------------------------------------------- */
+    /* 4. Get template fields                                                 */
+    /* ---------------------------------------------------------------------- */
+
     const templateFields = await model.getTemplateFields(
       client,
       payload.templateId,
     );
 
-    const selectedFields = templateFields.filter((field) =>
-      payload.fields.includes(field.field_key),
-    );
-    console.log(payload.fields);
+    /* ---------------------------------------------------------------------- */
+    /* 5. Resolve selected fields + ADMIN is_required                         */
+    /* ---------------------------------------------------------------------- */
+
+    const selectedFields = templateFields
+      .filter((field) =>
+        payload.fields.some(
+          (selected) => selected.field_key === field.field_key,
+        ),
+      )
+      .map((field) => {
+        const selected = payload.fields.find(
+          (item) => item.field_key === field.field_key,
+        );
+
+        return {
+          ...field,
+
+          // Admin value overrides template default
+          is_required: Boolean(selected.is_required),
+        };
+      });
+
     if (!selectedFields.length) {
       await client.query("ROLLBACK");
 
@@ -139,6 +693,10 @@ export const createDynamicTableService = async (payload) => {
         message: "No fields selected",
       };
     }
+
+    /* ---------------------------------------------------------------------- */
+    /* 6. Create business table                                               */
+    /* ---------------------------------------------------------------------- */
 
     const sql = buildCreateTableQuery({
       schemaName: organisation.schema_name,
@@ -149,22 +707,31 @@ export const createDynamicTableService = async (payload) => {
     const businessDB = getDB(organisation.org_type);
 
     await businessDB.query(sql);
-const hasFaceDescriptor = selectedFields.some(
-  (field) => field.field_key === "face_descriptor",
-);
 
-if (hasFaceDescriptor) {
-  const indexQuery = format(
-    `CREATE INDEX IF NOT EXISTS %I
-     ON %I.%I
-     USING hnsw (face_descriptor vector_cosine_ops)`,
-    `${payload.tableName}_face_descriptor_hnsw_idx`,
-    organisation.schema_name,
-    payload.tableName,
-  );
+    /* ---------------------------------------------------------------------- */
+    /* 7. Create HNSW index if face_descriptor is selected                   */
+    /* ---------------------------------------------------------------------- */
 
-  await businessDB.query(indexQuery);
-}
+    const hasFaceDescriptor = selectedFields.some(
+      (field) => field.field_key === "face_descriptor",
+    );
+
+    if (hasFaceDescriptor) {
+      const indexQuery = format(
+        `CREATE INDEX IF NOT EXISTS %I
+         ON %I.%I
+         USING hnsw (face_descriptor vector_cosine_ops)`,
+        `${payload.tableName}_face_descriptor_hnsw_idx`,
+        organisation.schema_name,
+        payload.tableName,
+      );
+
+      await businessDB.query(indexQuery);
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 8. Create dynamic table metadata                                       */
+    /* ---------------------------------------------------------------------- */
 
     const dynamicTable = await model.createDynamicTable(client, {
       organisationId: organisation.id,
@@ -175,11 +742,19 @@ if (hasFaceDescriptor) {
       createdBy: payload.createdBy,
     });
 
+    /* ---------------------------------------------------------------------- */
+    /* 9. Save selected fields + is_required                                  */
+    /* ---------------------------------------------------------------------- */
+
     await model.createDynamicTableFields(
       client,
       dynamicTable.id,
       selectedFields,
     );
+
+    /* ---------------------------------------------------------------------- */
+    /* 10. Commit                                                             */
+    /* ---------------------------------------------------------------------- */
 
     await client.query("COMMIT");
 
@@ -201,6 +776,10 @@ if (hasFaceDescriptor) {
     client.release();
   }
 };
+
+/* -------------------------------------------------------------------------- */
+/*                    GET DYNAMIC TABLE CONFIGURATION                        */
+/* -------------------------------------------------------------------------- */
 
 export const getDynamicTableConfigurationService = async (
   organisationId,
@@ -226,13 +805,21 @@ export const getDynamicTableConfigurationService = async (
       success: true,
       exists: true,
       displayName: config[0].display_name,
-      selectedFields: config.map((row) => row.field_key),
+
+      // Return admin-configured is_required
+      selectedFields: config.map((row) => ({
+        field_key: row.field_key,
+        is_required: Boolean(row.is_required),
+      })),
     };
   } finally {
     client.release();
   }
 };
 
+/* -------------------------------------------------------------------------- */
+/*                         UPDATE DYNAMIC TABLE                              */
+/* -------------------------------------------------------------------------- */
 
 export const updateDynamicTableService = async (payload) => {
   const client = await masterAuthDB.connect();
@@ -240,9 +827,10 @@ export const updateDynamicTableService = async (payload) => {
   try {
     await client.query("BEGIN");
 
-    // -------------------------------------------------
-    // 1. Validate organisation
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 1. Validate organisation                                              */
+    /* ---------------------------------------------------------------------- */
+
     const organisation = await model.getOrganisation(
       client,
       payload.organisationId,
@@ -250,15 +838,17 @@ export const updateDynamicTableService = async (payload) => {
 
     if (!organisation) {
       await client.query("ROLLBACK");
+
       return {
         success: false,
         message: "Organisation not found",
       };
     }
 
-    // -------------------------------------------------
-    // 2. Get template + table
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 2. Get template fields + existing dynamic table                       */
+    /* ---------------------------------------------------------------------- */
+
     const templateFields = await model.getTemplateFields(
       client,
       payload.templateId,
@@ -272,32 +862,67 @@ export const updateDynamicTableService = async (payload) => {
 
     if (!existingTable) {
       await client.query("ROLLBACK");
+
       return {
         success: false,
         message: "Dynamic table not found",
       };
     }
 
-    // -------------------------------------------------
-    // 3. Resolve selected field objects
-    // -------------------------------------------------
-    const selectedFields = templateFields.filter((field) =>
-      payload.fields.includes(field.field_key),
-    );
+    /* ---------------------------------------------------------------------- */
+    /* 3. Resolve selected fields + ADMIN is_required                         */
+    /* ---------------------------------------------------------------------- */
+
+    const selectedFields = templateFields
+      .filter((field) =>
+        payload.fields.some(
+          (selected) => selected.field_key === field.field_key,
+        ),
+      )
+      .map((field) => {
+        const selected = payload.fields.find(
+          (item) => item.field_key === field.field_key,
+        );
+
+        return {
+          ...field,
+
+          // Admin value overrides template default
+          is_required: Boolean(selected.is_required),
+        };
+      });
 
     if (!selectedFields.length) {
       await client.query("ROLLBACK");
+
       return {
         success: false,
         message: "No valid fields selected",
       };
     }
 
-    const selectedFieldKeys = selectedFields.map((f) => f.field_key);
+    const selectedFieldKeys = selectedFields.map((field) => field.field_key);
 
-    // -------------------------------------------------
-    // 4. Get business DB + existing columns
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 4. Get EXISTING dynamic field configuration                            */
+    /* ---------------------------------------------------------------------- */
+
+    const existingFieldConfig = await model.getDynamicTableFields(
+      client,
+      existingTable.id,
+    );
+
+    const existingRequiredMap = new Map(
+      existingFieldConfig.map((field) => [
+        field.field_key,
+        Boolean(field.is_required),
+      ]),
+    );
+
+    /* ---------------------------------------------------------------------- */
+    /* 5. Get business DB + existing columns                                 */
+    /* ---------------------------------------------------------------------- */
+
     const businessDB = getDB(organisation.org_type);
 
     const existingColumns = await model.getExistingTableColumns(
@@ -312,20 +937,42 @@ export const updateDynamicTableService = async (payload) => {
 
     const selectedSet = new Set(selectedFieldKeys);
 
-    // -------------------------------------------------
-    // 5. Git-style DIFF ENGINE
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 6. Calculate schema diff                                               */
+    /* ---------------------------------------------------------------------- */
 
-    const toAdd = selectedFieldKeys.filter((f) => !existingSet.has(f));
-
-    const toRemove = existingColumns.filter(
-      (col) => !SYSTEM_COLUMNS.has(col) && !selectedSet.has(col),
+    const toAdd = selectedFieldKeys.filter(
+      (fieldKey) => !existingSet.has(fieldKey),
     );
 
-    // -------------------------------------------------
-    // 6. If no changes → exit early
-    // -------------------------------------------------
-    if (toAdd.length === 0 && toRemove.length === 0) {
+    const toRemove = existingColumns.filter(
+      (column) => !SYSTEM_COLUMNS.has(column) && !selectedSet.has(column),
+    );
+
+    /* ---------------------------------------------------------------------- */
+    /* 7. Detect is_required changes                                         */
+    /* ---------------------------------------------------------------------- */
+
+    const requiredChanges = selectedFields.filter((field) => {
+      // New fields are handled by toAdd
+      if (!existingRequiredMap.has(field.field_key)) {
+        return false;
+      }
+
+      return (
+        existingRequiredMap.get(field.field_key) !== Boolean(field.is_required)
+      );
+    });
+
+    /* ---------------------------------------------------------------------- */
+    /* 8. If absolutely nothing changed                                      */
+    /* ---------------------------------------------------------------------- */
+
+    if (
+      toAdd.length === 0 &&
+      toRemove.length === 0 &&
+      requiredChanges.length === 0
+    ) {
       await client.query("COMMIT");
 
       return {
@@ -333,12 +980,14 @@ export const updateDynamicTableService = async (payload) => {
         message: "No schema changes required",
         addedFields: [],
         removedFields: [],
+        requiredFieldsUpdated: [],
       };
     }
 
-    // -------------------------------------------------
-    // 7. Helpers
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 9. Helpers                                                             */
+    /* ---------------------------------------------------------------------- */
+
     const isSafeName = (name) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name);
 
     const ALLOWED_TYPES = new Set([
@@ -359,12 +1008,14 @@ export const updateDynamicTableService = async (payload) => {
 
     const addedFields = [];
     const removedFields = [];
+    const requiredFieldsUpdated = [];
 
-    // -------------------------------------------------
-    // 8. ADD new columns (only new ones)
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 10. ADD new columns                                                    */
+    /* ---------------------------------------------------------------------- */
+
     for (const fieldKey of toAdd) {
-      const field = templateFields.find((f) => f.field_key === fieldKey);
+      const field = selectedFields.find((item) => item.field_key === fieldKey);
 
       if (!field) continue;
 
@@ -381,8 +1032,38 @@ export const updateDynamicTableService = async (payload) => {
         throw new Error(`Invalid SQL type: ${field.sql_type}`);
       }
 
+      /* -------------------------------------------------------------------- */
+      /* Required new column                                                  */
+      /* -------------------------------------------------------------------- */
+
+      if (field.is_required) {
+        const countQuery = format(
+          `SELECT COUNT(*)::int AS count
+           FROM %I.%I`,
+          organisation.schema_name,
+          payload.tableName,
+        );
+
+        const countResult = await businessDB.query(countQuery);
+
+        const rowCount = countResult.rows[0].count;
+
+        if (rowCount > 0) {
+          throw new Error(
+            `Cannot add required field "${field.field_key}" to an existing table containing ${rowCount} row(s). Provide a default value or add the field as optional first.`,
+          );
+        }
+      }
+
+      /* -------------------------------------------------------------------- */
+      /* Add column with NOT NULL when required                              */
+      /* -------------------------------------------------------------------- */
+
+      const requiredClause = field.is_required ? " NOT NULL" : "";
+
       const alterQuery = format(
-        `ALTER TABLE %I.%I ADD COLUMN IF NOT EXISTS %I %s`,
+        `ALTER TABLE %I.%I
+         ADD COLUMN IF NOT EXISTS %I %s${requiredClause}`,
         organisation.schema_name,
         payload.tableName,
         field.field_key,
@@ -394,13 +1075,15 @@ export const updateDynamicTableService = async (payload) => {
       addedFields.push(field.field_key);
     }
 
-    // 8.5 CREATE HNSW INDEX (if face_descriptor added)
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 11. CREATE HNSW INDEX                                                 */
+    /* ---------------------------------------------------------------------- */
+
     if (toAdd.includes("face_descriptor")) {
       const indexQuery = format(
         `CREATE INDEX IF NOT EXISTS %I
-     ON %I.%I
-     USING hnsw (face_descriptor vector_cosine_ops)`,
+         ON %I.%I
+         USING hnsw (face_descriptor vector_cosine_ops)`,
         `${payload.tableName}_face_descriptor_hnsw_idx`,
         organisation.schema_name,
         payload.tableName,
@@ -409,16 +1092,82 @@ export const updateDynamicTableService = async (payload) => {
       await businessDB.query(indexQuery);
     }
 
-    // -------------------------------------------------
-    // 9. REMOVE columns (only removed ones)
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 12. UPDATE is_required on EXISTING columns                            */
+    /* ---------------------------------------------------------------------- */
+
+    for (const field of requiredChanges) {
+      if (!isSafeName(field.field_key)) {
+        throw new Error(`Invalid field name: ${field.field_key}`);
+      }
+
+      /* -------------------------------------------------------------------- */
+      /* Optional -> Required                                                 */
+      /* -------------------------------------------------------------------- */
+
+      if (field.is_required) {
+        const nullCheckQuery = format(
+          `SELECT COUNT(*)::int AS count
+           FROM %I.%I
+           WHERE %I IS NULL`,
+          organisation.schema_name,
+          payload.tableName,
+          field.field_key,
+        );
+
+        const nullCheck = await businessDB.query(nullCheckQuery);
+
+        const nullCount = nullCheck.rows[0].count;
+
+        if (nullCount > 0) {
+          throw new Error(
+            `Cannot make "${field.field_key}" required because ${nullCount} existing row(s) contain NULL values.`,
+          );
+        }
+
+        const alterQuery = format(
+          `ALTER TABLE %I.%I
+           ALTER COLUMN %I SET NOT NULL`,
+          organisation.schema_name,
+          payload.tableName,
+          field.field_key,
+        );
+
+        await businessDB.query(alterQuery);
+      } else {
+
+      /* -------------------------------------------------------------------- */
+      /* Required -> Optional                                                 */
+      /* -------------------------------------------------------------------- */
+        const alterQuery = format(
+          `ALTER TABLE %I.%I
+           ALTER COLUMN %I DROP NOT NULL`,
+          organisation.schema_name,
+          payload.tableName,
+          field.field_key,
+        );
+
+        await businessDB.query(alterQuery);
+      }
+
+      requiredFieldsUpdated.push({
+        field_key: field.field_key,
+        is_required: Boolean(field.is_required),
+      });
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 13. REMOVE columns                                                    */
+    /* ---------------------------------------------------------------------- */
+
     for (const column of toRemove) {
       if (!isSafeName(column)) {
         throw new Error(`Invalid column name: ${column}`);
       }
 
       const dropQuery = format(
-        `ALTER TABLE %I.%I DROP COLUMN IF EXISTS %I`,
+        `ALTER TABLE %I.%I
+         DROP COLUMN IF EXISTS %I`,
         organisation.schema_name,
         payload.tableName,
         column,
@@ -429,19 +1178,19 @@ export const updateDynamicTableService = async (payload) => {
       removedFields.push(column);
     }
 
-    // -------------------------------------------------
-    // 10. UPDATE METADATA (TRUE DIFF FIX)
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 14. UPDATE DYNAMIC TABLE METADATA                                     */
+    /* ---------------------------------------------------------------------- */
 
-
-    // ✅ NEW CORRECT LOGIC
-
-    // delete only removed mappings
+    // Delete removed field mappings
     await model.deleteDynamicTableFields(client, existingTable.id, toRemove);
 
-    // insert only new mappings
-    const newFieldObjects = templateFields.filter((f) =>
-      toAdd.includes(f.field_key),
+    /* ---------------------------------------------------------------------- */
+    /* 15. Insert new field mappings                                         */
+    /* ---------------------------------------------------------------------- */
+
+    const newFieldObjects = selectedFields.filter((field) =>
+      toAdd.includes(field.field_key),
     );
 
     if (newFieldObjects.length > 0) {
@@ -452,25 +1201,54 @@ export const updateDynamicTableService = async (payload) => {
       );
     }
 
-    // -------------------------------------------------
-    // 11. Commit
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 16. Update existing field is_required metadata                        */
+    /* ---------------------------------------------------------------------- */
+
+    for (const field of requiredChanges) {
+      await model.updateDynamicTableFieldRequired(
+        client,
+        existingTable.id,
+        field.id,
+        Boolean(field.is_required),
+      );
+    }
+
+    /* ---------------------------------------------------------------------- */
+    /* 17. Commit                                                             */
+    /* ---------------------------------------------------------------------- */
+
     await client.query("COMMIT");
 
-    // -------------------------------------------------
-    // 12. Sync Business DB
-    // -------------------------------------------------
+    /* ---------------------------------------------------------------------- */
+    /* 18. Sync Business DB                                                   */
+    /* ---------------------------------------------------------------------- */
+
     await syncTemplateToBusinessDB(payload.organisationId, payload.templateId);
+
+    /* ---------------------------------------------------------------------- */
+    /* 19. Response                                                           */
+    /* ---------------------------------------------------------------------- */
 
     return {
       success: true,
       message: "Dynamic Form updated successfully",
+
       addedFields,
+
       removedFields,
-      skippedFields: payload.fields.filter((f) => !addedFields.includes(f)),
+
+      requiredFieldsUpdated,
+
+      skippedFields: selectedFieldKeys.filter(
+        (field) =>
+          !addedFields.includes(field) && !removedFields.includes(field),
+      ),
     };
   } catch (error) {
     await client.query("ROLLBACK");
+
+    console.error(error);
 
     return {
       success: false,
@@ -480,6 +1258,10 @@ export const updateDynamicTableService = async (payload) => {
     client.release();
   }
 };
+
+/* -------------------------------------------------------------------------- */
+/*                        FETCH BUSINESS DATA                                 */
+/* -------------------------------------------------------------------------- */
 
 export const fetchAllBusinessData = async (client) => {
   const schemas = await getOrganisationSchemas(client);

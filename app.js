@@ -146,6 +146,15 @@ app.get("/api/uploads/*", (req, res) => {
     });
   }
 });
+
+// AUTH / ORGANISATION uploads
+app.use(
+  "/auth-uploads",
+  express.static(
+    path.join(process.cwd(), "auth", "uploads")
+  )
+);
+
 app.use(
   "/uploads",
   express.static(path.join(process.cwd(), "security", "uploads")),
