@@ -1,226 +1,3 @@
-// /*
-// |--------------------------------------------------------------------------
-// | IMPORTANT INFORMATION MODEL
-// |--------------------------------------------------------------------------
-// */
-
-// /*
-// |--------------------------------------------------------------------------
-// | CREATE
-// |--------------------------------------------------------------------------
-// */
-
-// export const createImportantInformation = async (
-//   client,
-//   organisationId,
-//   title,
-//   description,
-//   status,
-//   createdBy
-// ) => {
-//   const query = `
-//     INSERT INTO "${schemaName}".important_information
-//     (
-//       organisation_id,
-//       title,
-//       description,
-//       status,
-//       created_by
-//     )
-//     VALUES ($1, $2, $3, $4, $5)
-//     RETURNING
-//       id,
-//       organisation_id,
-//       title,
-//       description,
-//       status,
-//       created_by,
-//       created_at,
-//       updated_at
-//   `;
-
-//   const values = [
-//     organisationId,
-//     title,
-//     description,
-//     status || "published",
-//     createdBy || null,
-//   ];
-
-//   const result = await client.query(query, values);
-
-//   return result.rows[0];
-// };
-
-// /*
-// |--------------------------------------------------------------------------
-// | GET ADMIN LIST
-// |--------------------------------------------------------------------------
-// */
-
-// export const getAdminImportantInformation = async (
-//   client,
-//   organisationId
-// ) => {
-//   const query = `
-//     SELECT
-//       id,
-//       organisation_id,
-//       title,
-//       description,
-//       status,
-//       created_by,
-//       created_at,
-//       updated_at
-//     FROM "${schemaName}".important_information
-//     WHERE organisation_id = $1
-//     ORDER BY created_at DESC
-//   `;
-
-//   const result = await client.query(query, [organisationId]);
-
-//   return result.rows;
-// };
-
-// /*
-// |--------------------------------------------------------------------------
-// | GET USER INFORMATION
-// |--------------------------------------------------------------------------
-// */
-
-// export const getUserImportantInformation = async (
-//   client,
-//   organisationId
-// ) => {
-//   const query = `
-//     SELECT
-//       id,
-//       title,
-//       description,
-//       created_at
-//     FROM "${schemaName}".important_information
-//     WHERE organisation_id = $1
-//       AND status = 'published'
-//     ORDER BY created_at DESC
-//   `;
-
-//   const result = await client.query(query, [organisationId]);
-
-//   return result.rows;
-// };
-
-// /*
-// |--------------------------------------------------------------------------
-// | UPDATE
-// |--------------------------------------------------------------------------
-// */
-
-// export const updateImportantInformation = async (
-//   client,
-//   id,
-//   organisationId,
-//   title,
-//   description,
-//   status
-// ) => {
-//   const query = `
-//     UPDATE "${schemaName}".important_information
-//     SET
-//       title = $1,
-//       description = $2,
-//       status = $3,
-//       updated_at = CURRENT_TIMESTAMP
-//     WHERE id = $4
-//       AND organisation_id = $5
-//     RETURNING
-//       id,
-//       organisation_id,
-//       title,
-//       description,
-//       status,
-//       created_by,
-//       created_at,
-//       updated_at
-//   `;
-
-//   const values = [
-//     title,
-//     description,
-//     status,
-//     id,
-//     organisationId,
-//   ];
-
-//   const result = await client.query(query, values);
-
-//   return result.rows[0];
-// };
-
-// /*
-// |--------------------------------------------------------------------------
-// | DELETE
-// |--------------------------------------------------------------------------
-// */
-
-// export const deleteImportantInformation = async (
-//   client,
-//   id,
-//   organisationId
-// ) => {
-//   const query = `
-//     DELETE FROM "${schemaName}".important_information
-//     WHERE id = $1
-//       AND organisation_id = $2
-//     RETURNING id
-//   `;
-
-//   const result = await client.query(query, [
-//     id,
-//     organisationId,
-//   ]);
-
-//   return result.rows[0];
-// };
-
-// /*
-// |--------------------------------------------------------------------------
-// | TOGGLE STATUS
-// |--------------------------------------------------------------------------
-// */
-
-// export const toggleImportantInformationStatus = async (
-//   client,
-//   id,
-//   organisationId
-// ) => {
-//   const query = `
-//     UPDATE "${schemaName}".important_information
-//     SET
-//       status =
-//         CASE
-//           WHEN status = 'published'
-//           THEN 'draft'
-//           ELSE 'published'
-//         END,
-//       updated_at = CURRENT_TIMESTAMP
-//     WHERE id = $1
-//       AND organisation_id = $2
-//     RETURNING
-//       id,
-//       title,
-//       description,
-//       status,
-//       updated_at
-//   `;
-
-//   const result = await client.query(query, [
-//     id,
-//     organisationId,
-//   ]);
-
-//   return result.rows[0];
-// };
-
 /*
 |--------------------------------------------------------------------------
 | CREATE IMPORTANT INFORMATION
@@ -298,13 +75,52 @@ export const createImportantInformation = async (
 |--------------------------------------------------------------------------
 */
 
+// export const getAdminImportantInformation = async (
+//   client,
+//   schemaName,
+//   organisationId
+// ) => {
+//   console.log(
+//     "Fetching important information from:",
+//     schemaName
+//   );
+
+//   const query = `
+//     SELECT
+//       id,
+//       organisation_id,
+//       title,
+//       description,
+//       priority,
+//       created_by,
+//       created_at,
+//       expires_at,
+//       is_active
+//     FROM "${schemaName}".important_information
+//     WHERE organisation_id = $1
+//     ORDER BY created_at DESC
+//   `;
+
+//   const result = await client.query(
+//     query,
+//     [organisationId]
+//   );
+
+//   console.log(
+//     "Important information found:",
+//     result.rows.length
+//   );
+
+//   return result.rows;
+// };
+
 export const getAdminImportantInformation = async (
   client,
   schemaName,
   organisationId
 ) => {
   console.log(
-    "Fetching important information from:",
+    "Fetching active important information from:",
     schemaName
   );
 
@@ -321,6 +137,7 @@ export const getAdminImportantInformation = async (
       is_active
     FROM "${schemaName}".important_information
     WHERE organisation_id = $1
+      AND is_active = TRUE
     ORDER BY created_at DESC
   `;
 
@@ -330,7 +147,7 @@ export const getAdminImportantInformation = async (
   );
 
   console.log(
-    "Important information found:",
+    "Active important information found:",
     result.rows.length
   );
 
