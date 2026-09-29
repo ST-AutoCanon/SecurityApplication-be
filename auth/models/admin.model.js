@@ -121,7 +121,7 @@ export const getTables = async (client, schemaName) => {
     WHERE table_schema = $1
       AND table_type = 'BASE TABLE'
       AND table_schema NOT IN ('public', 'information_schema', 'pg_catalog')
-      AND table_name NOT IN ('assign_gates','campaigns','forms','campaign_blocks','form_responses')
+      AND table_name NOT IN ('assign_gates','campaigns','forms','campaign_blocks','form_responses','face_details',apartment_member','apartment_member_vehicle','apartment_member_family')
     `,
     [schemaName],
   );
@@ -161,8 +161,6 @@ export const getTables = async (client, schemaName) => {
 
 //   return filteredRows;
 // };
-
-
 
 const formatIndianDateTime = (date) => {
   if (!(date instanceof Date)) {
@@ -222,8 +220,6 @@ export const getTableData = async (client, schemaName, tableName) => {
 
   return filteredRows;
 };
-
-
 
 export const getSecurityUsers = async (client, organisationId) => {
   const result = await client.query(
@@ -379,8 +375,6 @@ export const activateSecurityUser = async (client, organisationId, userId) => {
 };
 
 // buinsess data
-
-
 
 export const updateBusinessData = async (
   client,
