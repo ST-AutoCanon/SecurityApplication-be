@@ -1,14 +1,80 @@
 import * as service from "../services/organisation.service.js";
 
+// export const registerOrg = async (req, res) => {
+//   try {
+//     let { admin, ...organisationData } = req.body;
+
+//     if (req.file) {
+//       organisationData.photo_path = req.file.path;
+//     }
+
+//     if (!organisationData.org_type) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "org_type is required",
+//       });
+//     }
+
+//     if (typeof admin === "string") {
+//       try {
+//         admin = JSON.parse(admin);
+//       } catch {
+//         return res.status(400).json({
+//           success: false,
+//           message: "Invalid admin JSON format",
+//         });
+//       }
+//     }
+
+//     const result = await service.registerOrganisation(organisationData, admin);
+
+//     return res.status(result.success ? 201 : 400).json(result);
+//   } catch (error) {
+//     console.error(error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Server Error",
+//     });
+//   }
+// };
+
+
 export const registerOrg = async (req, res) => {
   try {
+    console.log("\n========== REGISTER ORGANISATION ==========");
+
+    console.log("METHOD:", req.method);
+    console.log("URL:", req.originalUrl);
+    console.log("USER:", req.user);
+
+    console.log("BODY:", req.body);
+
+    console.log(
+      "FILE:",
+      req.file
+        ? {
+            fieldname: req.file.fieldname,
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            path: req.file.path,
+            size: req.file.size,
+          }
+        : null,
+    );
+
     let { admin, ...organisationData } = req.body;
+
+    console.log("RAW ADMIN:", admin);
+    console.log("RAW ORGANISATION DATA:", organisationData);
 
     if (req.file) {
       organisationData.photo_path = req.file.path;
     }
 
     if (!organisationData.org_type) {
+      console.log("❌ org_type missing");
+
       return res.status(400).json({
         success: false,
         message: "org_type is required",
@@ -18,7 +84,9 @@ export const registerOrg = async (req, res) => {
     if (typeof admin === "string") {
       try {
         admin = JSON.parse(admin);
-      } catch {
+      } catch (error) {
+        console.error("❌ ADMIN JSON PARSE ERROR:", error);
+
         return res.status(400).json({
           success: false,
           message: "Invalid admin JSON format",
@@ -26,15 +94,22 @@ export const registerOrg = async (req, res) => {
       }
     }
 
+    console.log("PARSED ADMIN:", admin);
+    console.log("FINAL ORGANISATION DATA:", organisationData);
+
     const result = await service.registerOrganisation(organisationData, admin);
+
+    console.log("SERVICE RESULT:", result);
 
     return res.status(result.success ? 201 : 400).json(result);
   } catch (error) {
-    console.error(error);
+    console.error("❌ REGISTER CONTROLLER ERROR:", error);
+    console.error("STACK:", error.stack);
 
     return res.status(500).json({
       success: false,
       message: "Server Error",
+      error: error.message,
     });
   }
 };
