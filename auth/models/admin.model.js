@@ -121,7 +121,7 @@ export const getTables = async (client, schemaName) => {
     WHERE table_schema = $1
       AND table_type = 'BASE TABLE'
       AND table_schema NOT IN ('public', 'information_schema', 'pg_catalog')
-      AND table_name NOT IN ('assign_gates','campaigns','forms','campaign_blocks','form_responses','face_details',apartment_member','apartment_member_vehicle','apartment_member_family')
+      AND table_name NOT IN ('assign_gates','campaigns','forms','campaign_blocks','form_responses','face_details','apartment_member','apartment_member_vehicle','apartment_member_family')
     `,
     [schemaName],
   );
