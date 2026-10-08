@@ -1,6 +1,15 @@
 import masterAuthDB from "../../config/masterAuthDB.js";
 import * as model from "../models/Admindashboard.model.js";
 
+console.log(
+  "AVAILABLE MODEL FUNCTIONS:",
+  Object.keys(model)
+);
+
+console.log(
+  "getEntriesOverview:",
+  typeof model.getEntriesOverview
+);
 export const fetchDashboard = async (client, organisationId) => {
   const authClient = await masterAuthDB.connect();
 
@@ -128,6 +137,30 @@ export const fetchCategoryStats = async (
   );
 
 };
+export const fetchGateEntryOverview = async (
+  businessClient,
+  authClient,
+  organisationId,
+  period = "daily"
+) => {
+  const org =
+    await model.getOrganisationSchema(
+      authClient,
+      organisationId
+    );
+
+  if (!org) {
+    throw new Error(
+      "Organisation not found"
+    );
+  }
+
+  return await model.getGateEntryOverview(
+    businessClient,
+    org.schema_name,
+    period
+  );
+};
 // export const fetchCategoryTrend = async (
 //   authClient,
 //   organisationId,
@@ -231,16 +264,31 @@ export const fetchEntriesOverview = async (
   businessClient,
   authClient,
   organisationId,
-  period
+  period = "daily",
+  offset = 0
 ) => {
-
   return await model.getEntriesOverview(
     businessClient,
     authClient,
     organisationId,
-    period
+    period,
+    offset
   );
 };
+// export const fetchEntriesOverview = async (
+//   businessClient,
+//   authClient,
+//   organisationId,
+//   period
+// ) => {
+
+//   return await model.getEntriesOverview(
+//     businessClient,
+//     authClient,
+//     organisationId,
+//     period
+//   );
+// };
 export const fetchEntriesCategory = async (
   businessClient,
   authClient,

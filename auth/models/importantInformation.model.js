@@ -1,3 +1,26 @@
+// import {
+//   masterAuthDB,
+// } from "../../db/dbRouter.js";
+import masterAuthDB from "../../config/masterAuthDB.js";
+export const getOrganisationSchema = async (client, organisationId) => {
+  // console.log(
+  //   "organisationId received:",
+  //   organisationId,
+  //   typeof organisationId,
+  // );
+
+  const result = await client.query(
+    `
+    SELECT schema_name
+    FROM auth.organisations
+    WHERE id = $1
+    LIMIT 1
+    `,
+    [organisationId],
+  );
+  // console.log("result in modal:", result);
+  return result.rows[0];
+};
 /*
 |--------------------------------------------------------------------------
 | CREATE IMPORTANT INFORMATION

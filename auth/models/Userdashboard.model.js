@@ -1,3 +1,5 @@
+import masterAuthDB from "../../config/masterAuthDB.js";
+
 export const getRecentVisitors = async (
   client,
   schemaName,
@@ -328,7 +330,6 @@ export const getFlatMemberCount = async (
   return result.rows[0]?.count || 0;
 };
 
-
 export const getFlatVehicleCount = async (
   client,
   schemaName,
@@ -336,15 +337,170 @@ export const getFlatVehicleCount = async (
 ) => {
   const result = await client.query(
     `
-      SELECT COUNT(*)::int AS count
+      SELECT
+        COUNT(*) FILTER (
+          WHERE UPPER(TRIM(vehicle_type)) IN (
+            'BIKE',
+            'MOTORCYCLE',
+            'SCOOTER',
+            '2 WHEELER',
+            '2-WHEELER',
+            '2W',
+            'TWO WHEELER',
+            'TWO-WHEELER',
+            'TWOWHEELER'
+          )
+        )::int AS two_wheelers,
+
+        COUNT(*) FILTER (
+          WHERE UPPER(TRIM(vehicle_type)) IN (
+            'CAR',
+            'SUV',
+            'SEDAN',
+            'HATCHBACK',
+            '4 WHEELER',
+            '4-WHEELER',
+            '4W',
+            'FOUR WHEELER',
+            'FOUR-WHEELER',
+            'FOURWHEELER'
+          )
+        )::int AS four_wheelers
+
       FROM "${schemaName}"."apartment_member_vehicle"
+
       WHERE member_id = $1
     `,
     [memberId]
   );
 
-  return result.rows[0]?.count || 0;
+  console.log("========================================");
+  console.log("VEHICLE COUNT");
+  console.log("Schema:", schemaName);
+  console.log("Member ID:", memberId);
+  console.log("2 Wheelers:", result.rows[0]?.two_wheelers || 0);
+  console.log("4 Wheelers:", result.rows[0]?.four_wheelers || 0);
+  console.log("========================================");
+
+  return {
+    twoWheelers:
+      result.rows[0]?.two_wheelers || 0,
+
+    fourWheelers:
+      result.rows[0]?.four_wheelers || 0,
+  };
 };
+
+// export const getFlatVehicleCount = async (
+//   client,
+//   schemaName,
+//   memberId
+// ) => {
+//   const result = await client.query(
+//     `
+//       SELECT
+//         id,
+//         member_id,
+//         vehicle_type,
+//         vehicle_number
+//       FROM "${schemaName}"."apartment_member_vehicle"
+//       WHERE member_id = $1
+//       ORDER BY id
+//     `,
+//     [memberId]
+//   );
+
+//   console.log("========================================");
+//   console.log("VEHICLE DEBUG");
+//   console.log("Schema:", schemaName);
+//   console.log("Member ID:", memberId);
+//   console.log("Vehicle Rows:", result.rows);
+//   console.log("Vehicle Count:", result.rows.length);
+//   console.log("========================================");
+
+//   return {
+//     twoWheelers: 0,
+//     fourWheelers: 0,
+//   };
+// };
+// export const getFlatVehicleCount = async (
+//   client,
+//   schemaName,
+//   memberId
+// ) => {
+//   const result = await client.query(
+//     `
+//       SELECT
+//         COUNT(*) FILTER (
+//           WHERE
+//             LOWER(
+//               REGEXP_REPLACE(
+//                 TRIM(vehicle_type),
+//                 '[^a-zA-Z0-9]+',
+//                 '',
+//                 'g'
+//               )
+//             ) IN (
+//               '2wheeler',
+//               '2wheelers',
+//               'twowheeler',
+//               'twowheelers',
+//               '2w',
+//               '2wheelervehicle'
+//             )
+//         )::int AS two_wheelers,
+
+//         COUNT(*) FILTER (
+//           WHERE
+//             LOWER(
+//               REGEXP_REPLACE(
+//                 TRIM(vehicle_type),
+//                 '[^a-zA-Z0-9]+',
+//                 '',
+//                 'g'
+//               )
+//             ) IN (
+//               '4wheeler',
+//               '4wheelers',
+//               'fourwheeler',
+//               'fourwheelers',
+//               '4w',
+//               '4wheelervehicle'
+//             )
+//         )::int AS four_wheelers
+
+//       FROM "${schemaName}"."apartment_member_vehicle"
+
+//       WHERE member_id = $1
+//     `,
+//     [memberId]
+//   );
+
+//   return {
+//     twoWheelers:
+//       result.rows[0]?.two_wheelers || 0,
+
+//     fourWheelers:
+//       result.rows[0]?.four_wheelers || 0,
+//   };
+// };
+
+// export const getFlatVehicleCount = async (
+//   client,
+//   schemaName,
+//   memberId
+// ) => {
+//   const result = await client.query(
+//     `
+//       SELECT COUNT(*)::int AS count
+//       FROM "${schemaName}"."apartment_member_vehicle"
+//       WHERE member_id = $1
+//     `,
+//     [memberId]
+//   );
+
+//   return result.rows[0]?.count || 0;
+// };
 
 
 export const getPendingRequestCount = async (
@@ -364,7 +520,6 @@ export const getPendingRequestCount = async (
 
   return result.rows[0]?.count || 0;
 };
-
 
 export const getUserDashboardSummary = async (
   client,
@@ -453,8 +608,13 @@ export const getUserDashboardSummary = async (
         flat.ownership_type,
     },
 
-    vehicles:
-      vehicleCount,
+    vehicles: {
+      twoWheelers:
+        vehicleCount.twoWheelers,
+
+      fourWheelers:
+        vehicleCount.fourWheelers,
+    },
 
     members:
       memberCount,
@@ -463,6 +623,105 @@ export const getUserDashboardSummary = async (
       pendingRequestCount,
   };
 };
+
+
+// export const getUserDashboardSummary = async (
+//   client,
+//   schemaName,
+//   userId
+// ) => {
+//   /*
+//    * ----------------------------------------------------------
+//    * Logged-in resident
+//    * ----------------------------------------------------------
+//    */
+
+//   const flat =
+//     await getUserFlatDetails(
+//       client,
+//       schemaName,
+//       userId
+//     );
+
+//   if (!flat) {
+//     return null;
+//   }
+
+//   /*
+//    * ----------------------------------------------------------
+//    * Members
+//    * ----------------------------------------------------------
+//    */
+
+//   const memberCount =
+//     await getFlatMemberCount(
+//       client,
+//       schemaName,
+//       flat.block_tower,
+//       flat.floor_number,
+//       flat.flat_number
+//     );
+
+//   /*
+//    * ----------------------------------------------------------
+//    * Vehicles
+//    * ----------------------------------------------------------
+//    */
+
+//   const vehicleCount =
+//     await getFlatVehicleCount(
+//       client,
+//       schemaName,
+//       flat.id
+//     );
+
+//   /*
+//    * ----------------------------------------------------------
+//    * Pending requests
+//    * ----------------------------------------------------------
+//    */
+
+//   const pendingRequestCount =
+//     await getPendingRequestCount(
+//       client,
+//       schemaName,
+//       userId
+//     );
+
+//   /*
+//    * ----------------------------------------------------------
+//    * Response
+//    * ----------------------------------------------------------
+//    */
+
+//   return {
+//     flat: {
+//       apartmentName:
+//         flat.apartment_name,
+
+//       blockTower:
+//         flat.block_tower,
+
+//       floorNumber:
+//         flat.floor_number,
+
+//       flatNumber:
+//         flat.flat_number,
+
+//       ownershipType:
+//         flat.ownership_type,
+//     },
+
+//     vehicles:
+//       vehicleCount,
+
+//     members:
+//       memberCount,
+
+//     pendingRequests:
+//       pendingRequestCount,
+//   };
+// };
 
 /*
 |--------------------------------------------------------------------------
@@ -529,12 +788,16 @@ export const createAnnouncement = async (
 | ADMIN - GET ANNOUNCEMENTS
 |--------------------------------------------------------------------------
 */
-
 export const getAnnouncements = async (
   client,
   schemaName,
   organisationId
 ) => {
+  console.log(
+    "Fetching ADMIN announcements from:",
+    schemaName
+  );
+
   const query = `
     SELECT
       id,
@@ -544,15 +807,12 @@ export const getAnnouncements = async (
       priority,
       created_by,
       created_at,
+      starts_at,
       expires_at,
       is_active
     FROM "${schemaName}".announcements
     WHERE organisation_id = $1
       AND is_active = TRUE
-      AND (
-        expires_at IS NULL
-        OR expires_at >= CURRENT_DATE
-      )
     ORDER BY created_at DESC
   `;
 
@@ -561,8 +821,76 @@ export const getAnnouncements = async (
     [organisationId]
   );
 
+  console.log(
+    "Admin announcements:",
+    result.rows.length
+  );
+
   return result.rows;
 };
+
+
+/*
+|--------------------------------------------------------------------------
+| USER - GET ANNOUNCEMENTS
+|--------------------------------------------------------------------------
+|
+| USER RULE:
+|
+| Start date:
+|   starts_at IS NULL OR starts_at <= TODAY
+|
+| Expiry date:
+|   expires_at IS NULL OR expires_at >= TODAY
+|
+| Therefore:
+|
+|   start <= today <= expiry
+|
+| If start date is NULL:
+|   announcement is immediately visible.
+|
+| If expiry date is NULL:
+|   announcement never expires.
+|
+| Expired announcements are NOT deleted.
+| They are simply hidden from users.
+|
+*/
+
+// export const getAnnouncements = async (
+//   client,
+//   schemaName,
+//   organisationId
+// ) => {
+//   const query = `
+//     SELECT
+//       id,
+//       organisation_id,
+//       title,
+//       message,
+//       priority,
+//       created_by,
+//       created_at,
+//       expires_at,
+//       is_active
+//     FROM "${schemaName}".announcements
+//     WHERE organisation_id = $1
+//       AND is_active = TRUE
+//       AND (
+//         expires_at IS NULL
+//         OR expires_at >= CURRENT_DATE
+//       )
+//     ORDER BY created_at DESC
+//   `;
+
+//   const result = await client.query(
+//     query,
+//     [organisationId]
+//   );
+
+//   return result.rows;
+// };
 
 /*
 |--------------------------------------------------------------------------
@@ -572,32 +900,62 @@ export const getAnnouncements = async (
 | Users see announcements published for their organisation.
 |
 */
-
 export const getUserAnnouncements = async (
   client,
   schemaName,
   organisationId
 ) => {
   console.log(
-    "Fetching user announcements from:",
+    "Fetching USER announcements from:",
     schemaName
   );
 
   const query = `
     SELECT
       id,
+      organisation_id,
       title,
       message,
       priority,
       created_at,
-      expires_at
+      starts_at,
+      expires_at,
+      is_active
     FROM "${schemaName}".announcements
     WHERE organisation_id = $1
       AND is_active = TRUE
+
+      /*
+       * Announcement has started.
+       *
+       * Example:
+       * starts_at = 2026-10-05
+       * today     = 2026-10-06
+       * => SHOW
+       */
+      AND (
+        starts_at IS NULL
+        OR starts_at <= CURRENT_DATE
+      )
+
+      /*
+       * Announcement has not expired.
+       *
+       * Example:
+       * expires_at = 2026-10-10
+       * today      = 2026-10-10
+       * => SHOW
+       *
+       * Example:
+       * expires_at = 2026-10-10
+       * today      = 2026-10-11
+       * => HIDE
+       */
       AND (
         expires_at IS NULL
         OR expires_at >= CURRENT_DATE
       )
+
     ORDER BY created_at DESC
   `;
 
@@ -613,6 +971,46 @@ export const getUserAnnouncements = async (
 
   return result.rows;
 };
+// export const getUserAnnouncements = async (
+//   client,
+//   schemaName,
+//   organisationId
+// ) => {
+//   console.log(
+//     "Fetching user announcements from:",
+//     schemaName
+//   );
+
+//   const query = `
+//     SELECT
+//       id,
+//       title,
+//       message,
+//       priority,
+//       created_at,
+//       expires_at
+//     FROM "${schemaName}".announcements
+//     WHERE organisation_id = $1
+//       AND is_active = TRUE
+//       AND (
+//         expires_at IS NULL
+//         OR expires_at >= CURRENT_DATE
+//       )
+//     ORDER BY created_at DESC
+//   `;
+
+//   const result = await client.query(
+//     query,
+//     [organisationId]
+//   );
+
+//   console.log(
+//     "User announcements:",
+//     result.rows.length
+//   );
+
+//   return result.rows;
+// };
 
 /*
 |--------------------------------------------------------------------------
