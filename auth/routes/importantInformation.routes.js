@@ -55,8 +55,14 @@ import {
   getAdminImportantInformation,
   updateImportantInformation,
   deleteImportantInformation,
-  toggleImportantInformation,
+  
 } from "../controllers/importantInformation.controller.js";
+// import {
+//   createImportantInformation,
+  
+//   updateImportantInformation,
+  
+// } from "../controllers/importantInformation.controller.js";
 
 const router = express.Router();
 
@@ -94,10 +100,10 @@ router.delete(
   deleteImportantInformation
 );
 
-router.patch(
-  "/:id/toggle",
-  toggleImportantInformation
-);
+// router.patch(
+//   "/:id/toggle",
+//   toggleImportantInformation
+// );
 
 export default router;
 

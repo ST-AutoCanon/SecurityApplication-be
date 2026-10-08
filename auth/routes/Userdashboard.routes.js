@@ -101,9 +101,13 @@ router.get(
 //   auth,
 //   getUserAnnouncements
 // );
+// router.get(
+//   "/announcements",
+//   auth,
+//   getUserAnnouncements
+// );
 router.get(
   "/announcements",
-  auth,
   getUserAnnouncements
 );
 
