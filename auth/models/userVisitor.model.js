@@ -126,7 +126,7 @@
 
 //   return result.rows[0] || null;
 // };
-export const getUserFlatDetails = async ( client, schemaName, userId ) => { const result = await client.query( ` SELECT id, security_user_id, flat_number, block_tower, floor_number FROM "${schemaName}".apartment_member WHERE security_user_id = $1 LIMIT 1 `, [userId] ); return result.rows[0] || null; };
+export const getUserFlatDetails = async (client, schemaName, userId) => { const result = await client.query(` SELECT id, security_user_id, flat_number, block_tower, floor_number FROM "${schemaName}".apartment_member WHERE security_user_id = $1 LIMIT 1 `, [userId]); return result.rows[0] || null; };
 /*
 |--------------------------------------------------------------------------
 | GET VISITORS FOR USER'S FLAT
@@ -245,8 +245,8 @@ export const getVisitorsForFlat = async (
        */
       visit_date: punchTime
         ? punchTime.toLocaleDateString("en-CA", {
-            timeZone: "Asia/Kolkata",
-          })
+          timeZone: "Asia/Kolkata",
+        })
         : null,
 
       /*
@@ -335,4 +335,4 @@ export const getVisitorsForFlat = async (
 
 //   return result.rows;
 // };
-/* |-------------------------------------------------------------------------- | GET VISITOR STATS FOR USER'S FLAT |-------------------------------------------------------------------------- | | Counts only IN records. | | Today = today's visitor entries | This Week = current week's visitor entries | This Month = current month's visitor entries | | This prevents IN + OUT from being counted as two visitors. |-------------------------------------------------------------------------- */ export const getVisitorStatsForFlat = async ( client, schemaName, apartmentNumber ) => { const result = await client.query( ` SELECT COUNT(*) FILTER ( WHERE p.punch_time >= CURRENT_DATE AND p.punch_time < CURRENT_DATE + INTERVAL '1 day' ) AS today, COUNT(*) FILTER ( WHERE p.punch_time >= DATE_TRUNC('week', CURRENT_DATE) AND p.punch_time < CURRENT_DATE + INTERVAL '1 day' ) AS this_week, COUNT(*) FILTER ( WHERE p.punch_time >= DATE_TRUNC('month', CURRENT_DATE) AND p.punch_time < CURRENT_DATE + INTERVAL '1 day' ) AS this_month FROM "${schemaName}".punch_logs p WHERE p.apartment_number = $1 AND LOWER(TRIM(p.punch_type)) = 'in' AND LOWER(TRIM(p.table_name)) IN ( 'guest', 'visitor', 'maid', 'vendor', 'delivery', 'delivery_person', 'service_provider' ) `, [apartmentNumber] ); const row = result.rows[0] || {}; return { today: Number(row.today) || 0, thisWeek: Number(row.this_week) || 0, thisMonth: Number(row.this_month) || 0, }; };
+/* |-------------------------------------------------------------------------- | GET VISITOR STATS FOR USER'S FLAT |-------------------------------------------------------------------------- | | Counts only IN records. | | Today = today's visitor entries | This Week = current week's visitor entries | This Month = current month's visitor entries | | This prevents IN + OUT from being counted as two visitors. |-------------------------------------------------------------------------- */ export const getVisitorStatsForFlat = async (client, schemaName, apartmentNumber) => { const result = await client.query(` SELECT COUNT(*) FILTER ( WHERE p.punch_time >= CURRENT_DATE AND p.punch_time < CURRENT_DATE + INTERVAL '1 day' ) AS today, COUNT(*) FILTER ( WHERE p.punch_time >= DATE_TRUNC('week', CURRENT_DATE) AND p.punch_time < CURRENT_DATE + INTERVAL '1 day' ) AS this_week, COUNT(*) FILTER ( WHERE p.punch_time >= DATE_TRUNC('month', CURRENT_DATE) AND p.punch_time < CURRENT_DATE + INTERVAL '1 day' ) AS this_month FROM "${schemaName}".punch_logs p WHERE p.apartment_number = $1 AND LOWER(TRIM(p.punch_type)) = 'in' AND LOWER(TRIM(p.table_name)) IN ( 'guest', 'visitor', 'maid', 'vendor', 'delivery', 'delivery_person', 'service_provider' ) `, [apartmentNumber]); const row = result.rows[0] || {}; return { today: Number(row.today) || 0, thisWeek: Number(row.this_week) || 0, thisMonth: Number(row.this_month) || 0, }; };
