@@ -498,66 +498,103 @@ export const updateDynamicTableService = async (payload) => {
     /* 10. ADD new columns                                                    */
     /* ---------------------------------------------------------------------- */
 
-    for (const fieldKey of toAdd) {
-      const field = selectedFields.find((item) => item.field_key === fieldKey);
+    // for (const fieldKey of toAdd) {
+    //   const field = selectedFields.find((item) => item.field_key === fieldKey);
 
-      if (!field) continue;
+    //   if (!field) continue;
 
-      if (!isSafeName(field.field_key)) {
-        throw new Error(`Invalid field name: ${field.field_key}`);
-      }
+    //   if (!isSafeName(field.field_key)) {
+    //     throw new Error(`Invalid field name: ${field.field_key}`);
+    //   }
 
-      const type = field.sql_type.trim().toLowerCase();
+    //   const type = field.sql_type.trim().toLowerCase();
 
-      const validType =
-        ALLOWED_TYPES.has(type) || /^varchar\(\d+\)$/i.test(type);
+    //   const validType =
+    //     ALLOWED_TYPES.has(type) || /^varchar\(\d+\)$/i.test(type);
 
-      if (!validType) {
-        throw new Error(`Invalid SQL type: ${field.sql_type}`);
-      }
+    //   if (!validType) {
+    //     throw new Error(`Invalid SQL type: ${field.sql_type}`);
+    //   }
 
-      /* -------------------------------------------------------------------- */
-      /* Required new column                                                  */
-      /* -------------------------------------------------------------------- */
+    //   /* -------------------------------------------------------------------- */
+    //   /* Required new column                                                  */
+    //   /* -------------------------------------------------------------------- */
 
-      if (field.is_required) {
-        const countQuery = format(
-          `SELECT COUNT(*)::int AS count
-           FROM %I.%I`,
-          organisation.schema_name,
-          payload.tableName,
-        );
+    //   if (field.is_required) {
+    //     const countQuery = format(
+    //       `SELECT COUNT(*)::int AS count
+    //        FROM %I.%I`,
+    //       organisation.schema_name,
+    //       payload.tableName,
+    //     );
 
-        const countResult = await businessDB.query(countQuery);
+    //     const countResult = await businessDB.query(countQuery);
 
-        const rowCount = countResult.rows[0].count;
+    //     const rowCount = countResult.rows[0].count;
 
-        if (rowCount > 0) {
-          throw new Error(
-            `Cannot add required field "${field.field_key}" to an existing table containing ${rowCount} row(s). Provide a default value or add the field as optional first.`,
-          );
-        }
-      }
+    //     if (rowCount > 0) {
+    //       throw new Error(
+    //         `Cannot add required field "${field.field_key}" to an existing table containing ${rowCount} row(s). Provide a default value or add the field as optional first.`,
+    //       );
+    //     }
+    //   }
 
-      /* -------------------------------------------------------------------- */
-      /* Add column with NOT NULL when required                              */
-      /* -------------------------------------------------------------------- */
+    //   /* -------------------------------------------------------------------- */
+    //   /* Add column with NOT NULL when required                              */
+    //   /* -------------------------------------------------------------------- */
 
-      const requiredClause = field.is_required ? " NOT NULL" : "";
+    //   const requiredClause = field.is_required ? " NOT NULL" : "";
 
-      const alterQuery = format(
-        `ALTER TABLE %I.%I
-         ADD COLUMN IF NOT EXISTS %I %s${requiredClause}`,
-        organisation.schema_name,
-        payload.tableName,
-        field.field_key,
-        field.sql_type,
-      );
+    //   const alterQuery = format(
+    //     `ALTER TABLE %I.%I
+    //      ADD COLUMN IF NOT EXISTS %I %s${requiredClause}`,
+    //     organisation.schema_name,
+    //     payload.tableName,
+    //     field.field_key,
+    //     field.sql_type,
+    //   );
 
-      await businessDB.query(alterQuery);
+    //   await businessDB.query(alterQuery);
 
-      addedFields.push(field.field_key);
-    }
+    //   addedFields.push(field.field_key);
+    // }
+
+   
+for (const fieldKey of toAdd) {
+  const field = selectedFields.find(
+    (item) => item.field_key === fieldKey
+  );
+
+  if (!field) continue;
+
+  if (!isSafeName(field.field_key)) {
+    throw new Error(`Invalid field name: ${field.field_key}`);
+  }
+
+  const type = field.sql_type.trim().toLowerCase();
+
+  const validType =
+    ALLOWED_TYPES.has(type) || /^varchar\(\d+\)$/i.test(type);
+
+  if (!validType) {
+    throw new Error(`Invalid SQL type: ${field.sql_type}`);
+  }
+
+  // Add column without changing NULL / NOT NULL based on is_required
+  const alterQuery = format(
+    `ALTER TABLE %I.%I
+     ADD COLUMN IF NOT EXISTS %I %s`,
+    organisation.schema_name,
+    payload.tableName,
+    field.field_key,
+    field.sql_type
+  );
+
+  await businessDB.query(alterQuery);
+
+  addedFields.push(field.field_key);
+}
+
 
     /* ---------------------------------------------------------------------- */
     /* 11. CREATE HNSW INDEX                                                 */
@@ -580,65 +617,86 @@ export const updateDynamicTableService = async (payload) => {
     /* 12. UPDATE is_required on EXISTING columns                            */
     /* ---------------------------------------------------------------------- */
 
-    for (const field of requiredChanges) {
-      if (!isSafeName(field.field_key)) {
-        throw new Error(`Invalid field name: ${field.field_key}`);
-      }
+    // for (const field of requiredChanges) {
+    //   if (!isSafeName(field.field_key)) {
+    //     throw new Error(`Invalid field name: ${field.field_key}`);
+    //   }
 
-      /* -------------------------------------------------------------------- */
-      /* Optional -> Required                                                 */
-      /* -------------------------------------------------------------------- */
+    //   /* -------------------------------------------------------------------- */
+    //   /* Optional -> Required                                                 */
+    //   /* -------------------------------------------------------------------- */
 
-      if (field.is_required) {
-        const nullCheckQuery = format(
-          `SELECT COUNT(*)::int AS count
-           FROM %I.%I
-           WHERE %I IS NULL`,
-          organisation.schema_name,
-          payload.tableName,
-          field.field_key,
-        );
+    //   if (field.is_required) {
+    //     const nullCheckQuery = format(
+    //       `SELECT COUNT(*)::int AS count
+    //        FROM %I.%I
+    //        WHERE %I IS NULL`,
+    //       organisation.schema_name,
+    //       payload.tableName,
+    //       field.field_key,
+    //     );
 
-        const nullCheck = await businessDB.query(nullCheckQuery);
+    //     const nullCheck = await businessDB.query(nullCheckQuery);
 
-        const nullCount = nullCheck.rows[0].count;
+    //     const nullCount = nullCheck.rows[0].count;
 
-        if (nullCount > 0) {
-          throw new Error(
-            `Cannot make "${field.field_key}" required because ${nullCount} existing row(s) contain NULL values.`,
-          );
-        }
+    //     if (nullCount > 0) {
+    //       throw new Error(
+    //         `Cannot make "${field.field_key}" required because ${nullCount} existing row(s) contain NULL values.`,
+    //       );
+    //     }
 
-        const alterQuery = format(
-          `ALTER TABLE %I.%I
-           ALTER COLUMN %I SET NOT NULL`,
-          organisation.schema_name,
-          payload.tableName,
-          field.field_key,
-        );
+    //     const alterQuery = format(
+    //       `ALTER TABLE %I.%I
+    //        ALTER COLUMN %I SET NOT NULL`,
+    //       organisation.schema_name,
+    //       payload.tableName,
+    //       field.field_key,
+    //     );
 
-        await businessDB.query(alterQuery);
-      } else {
+    //     await businessDB.query(alterQuery);
+    //   } else {
 
-      /* -------------------------------------------------------------------- */
-      /* Required -> Optional                                                 */
-      /* -------------------------------------------------------------------- */
-        const alterQuery = format(
-          `ALTER TABLE %I.%I
-           ALTER COLUMN %I DROP NOT NULL`,
-          organisation.schema_name,
-          payload.tableName,
-          field.field_key,
-        );
+    //   /* -------------------------------------------------------------------- */
+    //   /* Required -> Optional                                                 */
+    //   /* -------------------------------------------------------------------- */
+    //     const alterQuery = format(
+    //       `ALTER TABLE %I.%I
+    //        ALTER COLUMN %I DROP NOT NULL`,
+    //       organisation.schema_name,
+    //       payload.tableName,
+    //       field.field_key,
+    //     );
 
-        await businessDB.query(alterQuery);
-      }
+    //     await businessDB.query(alterQuery);
+    //   }
 
-      requiredFieldsUpdated.push({
-        field_key: field.field_key,
-        is_required: Boolean(field.is_required),
-      });
-    }
+    //   requiredFieldsUpdated.push({
+    //     field_key: field.field_key,
+    //     is_required: Boolean(field.is_required),
+    //   });
+    // }
+
+    
+ 
+/* -------------------------------------------------------------------------- */
+/* 12. UPDATE is_required METADATA ONLY — DO NOT CHANGE DB CONSTRAINTS        */
+/* -------------------------------------------------------------------------- */
+
+for (const field of requiredChanges) {
+  await model.updateDynamicTableFieldRequired(
+    client,
+    existingTable.id,
+    field.id,
+    Boolean(field.is_required),
+  );
+
+  requiredFieldsUpdated.push({
+    field_key: field.field_key,
+    is_required: Boolean(field.is_required),
+  });
+}
+
 
     /* ---------------------------------------------------------------------- */
     /* 13. REMOVE columns                                                    */
