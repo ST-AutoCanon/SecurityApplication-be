@@ -8,7 +8,7 @@ import { sendSecurityInvitation } from "../services/mail.service.js";
 import { createSystemTables } from "../utils/createSystemTables.js";
 import { createFixedTables } from "../utils/createFixedTables.js";
 import { createTemplateTables } from "../utils/static_templates/createTemplateTables.js";
-import { createFixedDashboardTable } from "../utils/createFixedDashboardTable.js";
+// import { createFixedDashboardTable } from "../utils/createFixedDashboardTable.js";
 
 
 /* ---------------------------
@@ -111,7 +111,7 @@ export const registerOrganisation = async (organisationData, admin) => {
     // Create organisation-specific tables
     await createTemplateTables(db, safeSchema, organisation.org_type);
 await createFixedTables(db, safeSchema, organisation.org_type);
-await createFixedDashboardTable(db, safeSchema, organisation.org_type);
+// await createFixedDashboardTable(db, safeSchema, organisation.org_type);
 
 
     /* -----------------------------------
