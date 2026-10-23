@@ -146,20 +146,50 @@ const formatDefaultValue = (value, sqlType) => {
 //   return sql;
 // };
 
+// export const buildCreateTableQuery = ({ schemaName, tableName, fields }) => {
+//   const columns = [];
+
+//   // Primary Key
+//   columns.push(`id BIGSERIAL PRIMARY KEY`);
+
+//   for (const field of fields) {
+//     const safeType = normalizeSqlType(field.sql_type);
+
+//     let column = `"${field.field_key}" ${safeType}`;
+
+//     if (field.is_required) {
+//       column += " NOT NULL";
+//     }
+
+//     if (field.default_value !== undefined && field.default_value !== null) {
+//       const defaultClause = formatDefaultValue(field.default_value, safeType);
+
+//       column += defaultClause;
+//     }
+
+//     columns.push(column);
+//   }
+
+//   return `
+//     CREATE TABLE "${schemaName}"."${tableName}" (
+//       ${columns.join(",\n      ")}
+//     );
+//   `;
+// };
+
+
+
 export const buildCreateTableQuery = ({ schemaName, tableName, fields }) => {
   const columns = [];
 
-  // Primary Key
+  // Primary key remains NOT NULL automatically.
   columns.push(`id BIGSERIAL PRIMARY KEY`);
 
   for (const field of fields) {
     const safeType = normalizeSqlType(field.sql_type);
 
+    // Columns are nullable by default.
     let column = `"${field.field_key}" ${safeType}`;
-
-    if (field.is_required) {
-      column += " NOT NULL";
-    }
 
     if (field.default_value !== undefined && field.default_value !== null) {
       const defaultClause = formatDefaultValue(field.default_value, safeType);

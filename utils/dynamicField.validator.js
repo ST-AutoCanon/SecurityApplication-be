@@ -178,9 +178,7 @@ export const validatePayload = (allowedFields, payload) => {
     // EXTRACT ALLOWED KEYS
     // ============================================================
 
-    const allowedKeys = allowedFields.map(
-      (field) => field.field_key,
-    );
+    const allowedKeys = allowedFields.map((field) => field.field_key);
 
     // ============================================================
     // 1. FIND INVALID FIELDS
@@ -201,16 +199,54 @@ export const validatePayload = (allowedFields, payload) => {
     // 2. FIND MISSING REQUIRED FIELDS
     // ============================================================
 
-    const missingFields = allowedFields
-      .filter((field) => field.is_required)
-      .map((field) => field.field_key)
-      .filter(
-        (key) =>
+    // const missingFields = allowedFields
+    //   .filter((field) => field.is_required)
+    //   .map((field) => field.field_key)
+    //   .filter(
+    //     (key) =>
+    //       !(key in payload) ||
+    //       payload[key] === null ||
+    //       payload[key] === undefined ||
+    //       payload[key] === "",
+    //   );
+
+    // if (missingFields.length > 0) {
+    //   return {
+    //     valid: false,
+    //     message: `Missing required fields: ${missingFields.join(", ")}`,
+    //   };
+    // }
+
+    // ============================================================
+    // 2. FIND MISSING REQUIRED FIELDS
+    // ============================================================
+
+    // Fields that must always be provided by the client.
+    // Adjust this list to match your actual business rules.
+    const requiredFields = allowedFields.filter(
+      (field) =>
+        field.is_required === true &&
+        ![
+          "profile_photo",
+          "face_descriptor",
+          "status",
+          "created_at",
+          "updated_at",
+        ].includes(field.field_key),
+    );
+
+    const missingFields = requiredFields
+      .filter((field) => {
+        const key = field.field_key;
+
+        return (
           !(key in payload) ||
           payload[key] === null ||
           payload[key] === undefined ||
-          payload[key] === "",
-      );
+          payload[key] === ""
+        );
+      })
+      .map((field) => field.field_key);
 
     if (missingFields.length > 0) {
       return {
@@ -218,6 +254,7 @@ export const validatePayload = (allowedFields, payload) => {
         message: `Missing required fields: ${missingFields.join(", ")}`,
       };
     }
+
 
     // ============================================================
     // 3. VALIDATE EACH FIELD
@@ -232,11 +269,7 @@ export const validatePayload = (allowedFields, payload) => {
       console.log("Validation:", field.validation);
 
       // Optional empty field
-      if (
-        value === undefined ||
-        value === null ||
-        value === ""
-      ) {
+      if (value === undefined || value === null || value === "") {
         continue;
       }
 
@@ -255,8 +288,7 @@ export const validatePayload = (allowedFields, payload) => {
         if (value.length > 5) {
           return {
             valid: false,
-            message:
-              "Maximum 5 face vectors are allowed.",
+            message: "Maximum 5 face vectors are allowed.",
           };
         }
 
@@ -281,17 +313,13 @@ export const validatePayload = (allowedFields, payload) => {
 
           // Make sure every value is a valid number
           const invalidNumber = vector.some(
-            (item) =>
-              typeof item !== "number" ||
-              !Number.isFinite(item),
+            (item) => typeof item !== "number" || !Number.isFinite(item),
           );
 
           if (invalidNumber) {
             return {
               valid: false,
-              message: `Face vector ${
-                i + 1
-              } contains invalid values.`,
+              message: `Face vector ${i + 1} contains invalid values.`,
             };
           }
         }
@@ -316,10 +344,7 @@ export const validatePayload = (allowedFields, payload) => {
         try {
           validation = JSON.parse(validation);
         } catch (err) {
-          console.error(
-            `Invalid validation JSON for field ${key}:`,
-            err,
-          );
+          console.error(`Invalid validation JSON for field ${key}:`, err);
 
           return {
             valid: false,
@@ -380,10 +405,7 @@ export const validatePayload = (allowedFields, payload) => {
         try {
           regex = new RegExp(validation.pattern);
         } catch (err) {
-          console.error(
-            `Invalid regex for field ${key}:`,
-            err,
-          );
+          console.error(`Invalid regex for field ${key}:`, err);
 
           return {
             valid: false,
@@ -394,9 +416,7 @@ export const validatePayload = (allowedFields, payload) => {
         if (!regex.test(stringValue)) {
           return {
             valid: false,
-            message:
-              validation.message ||
-              `${field.field_label} is invalid.`,
+            message: validation.message || `${field.field_label} is invalid.`,
           };
         }
       }
@@ -406,15 +426,12 @@ export const validatePayload = (allowedFields, payload) => {
       // ==========================================================
 
       if (validation.format === "email") {
-        const emailRegex =
-          /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         if (!emailRegex.test(stringValue)) {
           return {
             valid: false,
-            message:
-              validation.message ||
-              "Invalid email address.",
+            message: validation.message || "Invalid email address.",
           };
         }
       }
@@ -429,11 +446,7 @@ export const validatePayload = (allowedFields, payload) => {
     for (const key of Object.keys(payload)) {
       const value = payload[key];
 
-      if (
-        value !== undefined &&
-        value !== null &&
-        value !== ""
-      ) {
+      if (value !== undefined && value !== null && value !== "") {
         cleanedPayload[key] = value;
       }
     }
