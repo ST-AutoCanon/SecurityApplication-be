@@ -65,11 +65,30 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
       throw new Error("Members sheet is missing");
     }
 
-    const members = XLSX.utils.sheet_to_json(memberSheet);
+    // const members = XLSX.utils.sheet_to_json(memberSheet);
 
-    const families = familySheet ? XLSX.utils.sheet_to_json(familySheet) : [];
+    // const families = familySheet ? XLSX.utils.sheet_to_json(familySheet) : [];
 
-    const vehicles = vehicleSheet ? XLSX.utils.sheet_to_json(vehicleSheet) : [];
+    // const vehicles = vehicleSheet ? XLSX.utils.sheet_to_json(vehicleSheet) : [];
+
+const readSheetRows = (sheet) => {
+  if (!sheet) return [];
+
+  return XLSX.utils
+    .sheet_to_json(sheet, {
+      defval: "",
+      raw: true,
+    })
+    .filter((row) =>
+      Object.values(row).some(
+        (value) => String(value ?? "").trim() !== ""
+      )
+    );
+};
+
+const members = readSheetRows(memberSheet);
+const families = readSheetRows(familySheet);
+const vehicles = readSheetRows(vehicleSheet);
 
     const memberMap = {};
 
@@ -79,6 +98,8 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
     let membersImported = 0;
     let familyImported = 0;
     let vehiclesImported = 0;
+    console.log("Member Excel headers:", Object.keys(members[0] || {}));
+console.log("First member row:", members[0]);
 
     /**
      * =====================================
@@ -95,6 +116,27 @@ export const importApartmentExcelService = async (organisationId, filePath) => {
       ) {
         continue;
       }
+      // Skip the sample/template row
+if (
+  String(row.member_code).trim() === "M001" &&
+  String(row.first_name).trim() === "John" &&
+  String(row.last_name).trim() === "Smith"
+) {
+  continue;
+}
+
+// Validate required fields before database insertion
+if (!String(row.first_name ?? "").trim()) {
+  throw new Error(
+    `First Name is required. Please check the Members sheet.`
+  );
+}
+
+if (!String(row.member_code ?? "").trim()) {
+  throw new Error(
+    `Member Code is required. Please check the Members sheet.`
+  );
+}
       const memberData = {
         security_user_id: row.security_user_id || null,
 

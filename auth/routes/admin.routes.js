@@ -1,7 +1,7 @@
 import express from "express";
 import * as controller from "../controllers/admin.controller.js";
 import { auth } from "../../middleware/auth.js";
-
+import { businessDataUpload } from "../middleware/businessDataUpload.js";
 const router = express.Router();
 
 router.use(auth);
@@ -49,8 +49,12 @@ router.get("/business-data", controller.getAllBusinessData);
 
 router.get("/business-data/:table/:id", controller.getBusinessDataById);
 
-router.put("/business-data/:table/:id", controller.updateBusinessData);
-
+// router.put("/business-data/:table/:id", controller.updateBusinessData);
+router.put(
+  "/business-data/:table/:id",
+  businessDataUpload.single("profile_photo_file"),
+  controller.updateBusinessData,
+);
 router.patch(
   "/business-data/:table/:id/deactivate",
   controller.deactivateBusinessData,

@@ -1,5 +1,21 @@
 import crypto from "crypto";
 
+const getProfilePhotoUrl = (storedPath) => {
+  if (!storedPath) return null;
+
+  const normalizedPath = String(storedPath).replace(/\\/g, "/");
+  const filename = normalizedPath.split("/").filter(Boolean).pop();
+
+  if (!filename || filename === "undefined" || filename === "null") {
+    return null;
+  }
+
+  const baseUrl = (process.env.BASE_URL || "http://localhost:5006")
+    .replace(/\/+$/, "");
+
+  return `${baseUrl}/api/uploads/${encodeURIComponent(filename)}`;
+};
+
 export const getOrganisationById = async (client, organisationId) => {
   const result = await client.query(
     `
@@ -195,10 +211,12 @@ export const getTableData = async (client, schemaName, tableName) => {
   const filteredRows = result.rows.map(
     ({ organisation_schema, face_descriptor, ...rest }) => {
       // Format profile photo URL
-      if (rest.profile_photo) {
-        rest.profile_photo = `${process.env.BASE_URL}/${rest.profile_photo}`;
-      }
-
+      // if (rest.profile_photo) {
+      //   rest.profile_photo = `${process.env.BASE_URL}/${rest.profile_photo}`;
+      // }
+if (rest.profile_photo) {
+  rest.profile_photo = getProfilePhotoUrl(rest.profile_photo);
+}
       // Format punch_time as DD/MM/YYYY HH:MM:SS AM/PM
       if (rest.punch_time instanceof Date) {
         rest.punch_time = formatIndianDateTime(rest.punch_time);
@@ -436,7 +454,8 @@ export const getBusinessDataById = async (
   const row = result.rows[0];
 
   if (row.profile_photo) {
-    row.profile_photo = `${process.env.BASE_URL}/${row.profile_photo}`;
+    // row.profile_photo = `${process.env.BASE_URL}/${row.profile_photo}`;
+    row.profile_photo = getProfilePhotoUrl(row.profile_photo);
   }
 
   // delete row.face_descriptor;
