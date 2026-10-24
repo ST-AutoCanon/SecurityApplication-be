@@ -92,15 +92,215 @@ export const vehiclesTemplate = [
 ];
 
 
+// export const applyExcelStyle = (sheet) => {
+//   const range = XLSX.utils.decode_range(sheet["!ref"]);
+
+//   /**
+//    * =========================
+//    * HEADER STYLE
+//    * =========================
+//    */
+
+//   for (let col = range.s.c; col <= range.e.c; col++) {
+//     const address = XLSX.utils.encode_cell({
+//       r: 0,
+//       c: col,
+//     });
+
+//     const cell = sheet[address];
+
+//     if (cell) {
+//       cell.s = {
+//         fill: {
+//           patternType: "solid",
+//           fgColor: {
+//             rgb: "1F4E78",
+//           },
+//         },
+
+//         font: {
+//           bold: true,
+//           color: {
+//             rgb: "FFFFFF",
+//           },
+//           sz: 12,
+//         },
+
+//         alignment: {
+//           horizontal: "center",
+//           vertical: "center",
+//           wrapText: true,
+//         },
+
+//         border: {
+//           top: {
+//             style: "thin",
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+
+//           bottom: {
+//             style: "thin",
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+
+//           left: {
+//             style: "thin",
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+
+//           right: {
+//             style: "thin",
+//             color: {
+//               rgb: "FFFFFF",
+//             },
+//           },
+//         },
+//       };
+//     }
+//   }
+
+//   /**
+//    * =========================
+//    * BODY CELL STYLE
+//    * =========================
+//    */
+
+//   for (let row = 1; row <= range.e.r; row++) {
+//     for (let col = range.s.c; col <= range.e.c; col++) {
+//       const address = XLSX.utils.encode_cell({
+//         r: row,
+//         c: col,
+//       });
+
+//       const cell = sheet[address];
+
+//       if (cell) {
+//         // Aadhaar number column = J (index 9)
+//         // Apply Text format ONLY if Aadhaar has a value
+//         if (
+//           col === 9 &&
+//           cell.v !== undefined &&
+//           cell.v !== null &&
+//           String(cell.v).trim() !== ""
+//         ) {
+//           cell.t = "s";
+//           cell.z = "@";
+//           cell.v = String(cell.v);
+//         }
+
+//         cell.s = {
+//           alignment: {
+//             vertical: "center",
+//             wrapText: true,
+//           },
+
+//           border: {
+//             top: {
+//               style: "thin",
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+
+//             bottom: {
+//               style: "thin",
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+
+//             left: {
+//               style: "thin",
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+
+//             right: {
+//               style: "thin",
+//               color: {
+//                 rgb: "D1D5DB",
+//               },
+//             },
+//           },
+//         };
+//       }
+//     }
+//   }
+
+//   /**
+//    * =========================
+//    * COLUMN WIDTH
+//    * =========================
+//    */
+
+//   sheet["!cols"] = [
+//     { wch: 15 }, // member_code
+//     { wch: 20 }, // security_user_id
+//     { wch: 18 }, // first_name
+//     { wch: 18 }, // last_name
+//     { wch: 12 }, // gender
+//     { wch: 18 }, // DOB
+//     { wch: 20 }, // mobile
+//     { wch: 25 }, // alternate mobile
+//     { wch: 35 }, // email
+//     { wch: 22 }, // aadhaar
+//     { wch: 22 }, // occupation
+//     { wch: 30 }, // apartment
+//     { wch: 15 }, // tower
+//     { wch: 15 }, // floor
+//     { wch: 18 }, // flat
+//     { wch: 20 }, // ownership
+//     { wch: 18 }, // move date
+//     { wch: 22 }, // family count
+//     { wch: 28 }, // emergency name
+//     { wch: 32 }, // emergency relation
+//     { wch: 25 }, // emergency mobile
+//     { wch: 18 }, // member type
+//     { wch: 12 }, // status
+//   ];
+
+//   /**
+//    * =========================
+//    * ROW HEIGHT
+//    * =========================
+//    */
+
+//   sheet["!rows"] = [
+//     {
+//       hpt: 35,
+//     },
+//   ];
+
+//   /**
+//    * FREEZE HEADER
+//    */
+
+//   sheet["!freeze"] = {
+//     xSplit: 0,
+//     ySplit: 1,
+//   };
+
+//   return sheet;
+// };
+
 export const applyExcelStyle = (sheet) => {
+  if (!sheet["!ref"]) return sheet;
+
   const range = XLSX.utils.decode_range(sheet["!ref"]);
 
-  /**
-   * =========================
-   * HEADER STYLE
-   * =========================
-   */
+  // Aadhaar Number column J (zero-based index 9)
+  const AADHAAR_COL = 9;
 
+  /**
+   * HEADER STYLE
+   */
   for (let col = range.s.c; col <= range.e.c; col++) {
     const address = XLSX.utils.encode_cell({
       r: 0,
@@ -113,64 +313,31 @@ export const applyExcelStyle = (sheet) => {
       cell.s = {
         fill: {
           patternType: "solid",
-          fgColor: {
-            rgb: "1F4E78",
-          },
+          fgColor: { rgb: "1F4E78" },
         },
-
         font: {
           bold: true,
-          color: {
-            rgb: "FFFFFF",
-          },
+          color: { rgb: "FFFFFF" },
           sz: 12,
         },
-
         alignment: {
           horizontal: "center",
           vertical: "center",
           wrapText: true,
         },
-
         border: {
-          top: {
-            style: "thin",
-            color: {
-              rgb: "FFFFFF",
-            },
-          },
-
-          bottom: {
-            style: "thin",
-            color: {
-              rgb: "FFFFFF",
-            },
-          },
-
-          left: {
-            style: "thin",
-            color: {
-              rgb: "FFFFFF",
-            },
-          },
-
-          right: {
-            style: "thin",
-            color: {
-              rgb: "FFFFFF",
-            },
-          },
+          top: { style: "thin", color: { rgb: "FFFFFF" } },
+          bottom: { style: "thin", color: { rgb: "FFFFFF" } },
+          left: { style: "thin", color: { rgb: "FFFFFF" } },
+          right: { style: "thin", color: { rgb: "FFFFFF" } },
         },
       };
     }
   }
 
   /**
-   * =========================
-   * BODY CELL STYLE
-   * =========================
+   * BODY CELL STYLE + AADHAAR TEXT FORMAT
    */
-
   for (let row = 1; row <= range.e.r; row++) {
     for (let col = range.s.c; col <= range.e.c; col++) {
       const address = XLSX.utils.encode_cell({
@@ -178,114 +345,117 @@ export const applyExcelStyle = (sheet) => {
         c: col,
       });
 
-      const cell = sheet[address];
+      // Create missing cells in the Aadhaar column so
+      // empty cells also receive the Text number format.
+      let cell = sheet[address];
 
-      if (cell) {
-        // Aadhaar number column = J (index 9)
-        // Apply Text format ONLY if Aadhaar has a value
+      if (col === AADHAAR_COL && !cell) {
+        cell = {
+          t: "s",
+          v: "",
+          z: "@",
+        };
+        sheet[address] = cell;
+      }
+
+      if (!cell) continue;
+
+      // Apply Text format to every Aadhaar cell,
+      // whether it currently contains a value or is empty.
+      if (col === AADHAAR_COL) {
+        cell.t = "s";
+        cell.z = "@";
+
         if (
-          col === 9 &&
           cell.v !== undefined &&
           cell.v !== null &&
           String(cell.v).trim() !== ""
         ) {
-          cell.t = "s";
-          cell.z = "@";
           cell.v = String(cell.v);
         }
-
-        cell.s = {
-          alignment: {
-            vertical: "center",
-            wrapText: true,
-          },
-
-          border: {
-            top: {
-              style: "thin",
-              color: {
-                rgb: "D1D5DB",
-              },
-            },
-
-            bottom: {
-              style: "thin",
-              color: {
-                rgb: "D1D5DB",
-              },
-            },
-
-            left: {
-              style: "thin",
-              color: {
-                rgb: "D1D5DB",
-              },
-            },
-
-            right: {
-              style: "thin",
-              color: {
-                rgb: "D1D5DB",
-              },
-            },
-          },
-        };
       }
+
+      cell.s = {
+        ...(cell.s || {}),
+        alignment: {
+          vertical: "center",
+          wrapText: true,
+        },
+        border: {
+          top: { style: "thin", color: { rgb: "D1D5DB" } },
+          bottom: { style: "thin", color: { rgb: "D1D5DB" } },
+          left: { style: "thin", color: { rgb: "D1D5DB" } },
+          right: { style: "thin", color: { rgb: "D1D5DB" } },
+        },
+      };
     }
   }
 
   /**
-   * =========================
    * COLUMN WIDTH
-   * =========================
    */
-
   sheet["!cols"] = [
     { wch: 15 }, // member_code
     { wch: 20 }, // security_user_id
     { wch: 18 }, // first_name
     { wch: 18 }, // last_name
     { wch: 12 }, // gender
-    { wch: 18 }, // DOB
-    { wch: 20 }, // mobile
-    { wch: 25 }, // alternate mobile
+    { wch: 18 }, // date_of_birth
+    { wch: 20 }, // mobile_number
+    { wch: 25 }, // alternate_mobile_number
     { wch: 35 }, // email
-    { wch: 22 }, // aadhaar
+    { wch: 22 }, // aadhaar_number
     { wch: 22 }, // occupation
-    { wch: 30 }, // apartment
-    { wch: 15 }, // tower
-    { wch: 15 }, // floor
-    { wch: 18 }, // flat
-    { wch: 20 }, // ownership
-    { wch: 18 }, // move date
-    { wch: 22 }, // family count
-    { wch: 28 }, // emergency name
-    { wch: 32 }, // emergency relation
-    { wch: 25 }, // emergency mobile
-    { wch: 18 }, // member type
+    { wch: 30 }, // apartment_name
+    { wch: 15 }, // block_tower
+    { wch: 15 }, // floor_number
+    { wch: 18 }, // flat_number
+    { wch: 20 }, // ownership_type
+    { wch: 18 }, // move_in_date
+    { wch: 22 }, // family_member_count
+    { wch: 28 }, // emergency_contact_name
+    { wch: 32 }, // emergency_contact_relationship
+    { wch: 25 }, // emergency_contact_mobile
+    { wch: 18 }, // member_type
     { wch: 12 }, // status
   ];
 
   /**
-   * =========================
    * ROW HEIGHT
-   * =========================
    */
-
-  sheet["!rows"] = [
-    {
-      hpt: 35,
-    },
-  ];
+  sheet["!rows"] = [{ hpt: 35 }];
 
   /**
    * FREEZE HEADER
    */
-
   sheet["!freeze"] = {
     xSplit: 0,
     ySplit: 1,
   };
 
+  // Force Aadhaar column J to Text format
+const aadhaarColumn = 9; // J, zero-based
+
+for (let row = 1; row <= 500; row++) {
+  const address = XLSX.utils.encode_cell({
+    r: row,
+    c: aadhaarColumn,
+  });
+
+  if (!sheet[address]) {
+    sheet[address] = {
+      t: "s",
+      v: "",
+    };
+  }
+
+  sheet[address].t = "s";
+  sheet[address].z = "@";
+}
+
+// Extend worksheet range to include formatted Aadhaar cells
+const existingRange = XLSX.utils.decode_range(sheet["!ref"] || "A1");
+existingRange.e.r = Math.max(existingRange.e.r, 500);
+sheet["!ref"] = XLSX.utils.encode_range(existingRange);
   return sheet;
 };

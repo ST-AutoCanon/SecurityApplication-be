@@ -319,12 +319,19 @@ export const updateBusinessData = async (req, res) => {
     const organisationId = req.user.organisation_id;
     const orgType = req.user.org_type;
 
+    const updateData = { ...req.body };
+
+    // Save the relative file path in the existing DB column.
+    if (req.file) {
+      updateData.profile_photo = `uploads/${req.file.filename}`;
+    }
+
     const result = await service.updateBusinessDataService(
       organisationId,
       orgType,
       table,
       id,
-      req.body,
+      updateData,
     );
 
     return res.status(result.success ? 200 : 400).json(result);
@@ -333,10 +340,35 @@ export const updateBusinessData = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Server Error",
+      message: error.message || "Server Error",
     });
   }
 };
+// export const updateBusinessData = async (req, res) => {
+//   try {
+//     const { table, id } = req.params;
+
+//     const organisationId = req.user.organisation_id;
+//     const orgType = req.user.org_type;
+
+//     const result = await service.updateBusinessDataService(
+//       organisationId,
+//       orgType,
+//       table,
+//       id,
+//       req.body,
+//     );
+
+//     return res.status(result.success ? 200 : 400).json(result);
+//   } catch (error) {
+//     console.error("Update Business Data Error:", error);
+
+//     return res.status(500).json({
+//       success: false,
+//       message: "Server Error",
+//     });
+//   }
+// };
 export const activateBusinessData = async (req, res) => {
   try {
     const { table, id } = req.params;

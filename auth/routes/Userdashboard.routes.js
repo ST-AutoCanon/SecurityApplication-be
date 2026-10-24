@@ -21,6 +21,7 @@ import {
 } from "../controllers/userVisitor.controller.js";
 
 import requestAnnouncementRoutes from "./requestAnnouncement.routes.js";
+import {getProfile } from "../controllers/profile.controller.js";
 
 const router = express.Router();
 // // TEST
@@ -133,4 +134,7 @@ router.use(
   "/request-announcements",
   requestAnnouncementRoutes
 );
+
+router.get("/profile", auth, getProfile);
+
 export default router;
