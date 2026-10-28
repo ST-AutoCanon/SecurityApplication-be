@@ -152,6 +152,15 @@ export const loginService = async (email, password, organisation_id) => {
       };
     }
 
+    if (orgAdmin.registration_expired) {
+  return {
+    success: false,
+    code: "REGISTRATION_EXPIRED",
+    message:
+      "Your registration has expired. Please contact the administration to renew your access.",
+  };
+}
+
     const isMatch = await bcrypt.compare(password, orgAdmin.password);
 
     if (!isMatch) {
@@ -197,6 +206,14 @@ export const loginService = async (email, password, organisation_id) => {
     };
   }
 
+  if (orgUser.registration_expired) {
+  return {
+    success: false,
+    code: "REGISTRATION_EXPIRED",
+    message:
+      "Your registration has expired. Please contact the administration to renew your access.",
+  };
+}
   const isMatch = await bcrypt.compare(password, orgUser.password);
 
   if (!isMatch) {

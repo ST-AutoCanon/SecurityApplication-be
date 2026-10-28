@@ -163,9 +163,20 @@ export const loginController = async (req, res) => {
     console.log("ORG ID:", organisation_id);
 
     const result = await loginService(email, password, organisation_id);
+    // if (!result.success) {
+    //   return res.status(400).json(apiResponse(false, result.message));
+    // }
     if (!result.success) {
-      return res.status(400).json(apiResponse(false, result.message));
-    }
+  if (result.code === "REGISTRATION_EXPIRED") {
+    return res.status(403).json({
+      success: false,
+      code: "REGISTRATION_EXPIRED",
+      message: result.message,
+    });
+  }
+
+  return res.status(400).json(apiResponse(false, result.message));
+}
 
     const user = result.data.user;
     console.log("user :", user);

@@ -95,13 +95,39 @@ export const getMasterUsers = async () => {
 // };
 
 
+// export const findOrgAdminByEmail = async (email, organisationId) => {
+//   const result = await masterAuthDB.query(
+//     `
+//     SELECT
+//       u.*,
+//       o.org_type,
+//       o.status AS organisation_status
+//     FROM auth.users u
+//     INNER JOIN auth.organisations o
+//       ON o.id = u.organisation_id
+//     WHERE u.email = $1
+//       AND u.organisation_id = $2
+//       AND u.role = 'admin'
+//     LIMIT 1
+//     `,
+//     [email, organisationId],
+//   );
+
+//   return result.rows[0];
+// };
+
 export const findOrgAdminByEmail = async (email, organisationId) => {
   const result = await masterAuthDB.query(
     `
     SELECT
       u.*,
       o.org_type,
-      o.status AS organisation_status
+      o.status AS organisation_status,
+      o.registration_end_date,
+      (
+        o.registration_end_date IS NOT NULL
+        AND o.registration_end_date < CURRENT_DATE
+      ) AS registration_expired
     FROM auth.users u
     INNER JOIN auth.organisations o
       ON o.id = u.organisation_id
@@ -140,13 +166,38 @@ export const findOrgAdminByEmail = async (email, organisationId) => {
 //   return result.rows[0];
 // };
 
+// export const findOrgUserByEmail = async (email, organisationId) => {
+//   const result = await masterAuthDB.query(
+//     `
+//     SELECT
+//       u.*,
+//       o.org_type,
+//       o.status AS organisation_status
+//     FROM auth.users u
+//     INNER JOIN auth.organisations o
+//       ON o.id = u.organisation_id
+//     WHERE u.email = $1
+//       AND u.organisation_id = $2
+//     LIMIT 1
+//     `,
+//     [email, organisationId],
+//   );
+
+//   return result.rows[0];
+// };
+
 export const findOrgUserByEmail = async (email, organisationId) => {
   const result = await masterAuthDB.query(
     `
     SELECT
       u.*,
       o.org_type,
-      o.status AS organisation_status
+      o.status AS organisation_status,
+      o.registration_end_date,
+      (
+        o.registration_end_date IS NOT NULL
+        AND o.registration_end_date < CURRENT_DATE
+      ) AS registration_expired
     FROM auth.users u
     INNER JOIN auth.organisations o
       ON o.id = u.organisation_id
