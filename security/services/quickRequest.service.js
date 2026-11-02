@@ -2042,6 +2042,8 @@
 //     date
 //   );
 // };
+
+
 import masterAuthDB from "../../config/masterAuthDB.js";
 import { getDB } from "../../config/dbFactory.js";
 import { getOrganisationById } from "../../auth/models/organisation.model.js";
@@ -2150,6 +2152,7 @@ export const getQuickRequestByIdService = async (organisationId, requestId) => {
       status: row.status,
       icon: row.icon || "other",
       is_bookable: Boolean(row.is_bookable),
+      booking_mode: row.booking_mode === "free" ? "free" : "slots",   // ← ADD THIS
       slots: Array.isArray(row.slots)
         ? row.slots
         : typeof row.slots === "string"
@@ -2167,10 +2170,43 @@ export const getQuickRequestByIdService = async (organisationId, requestId) => {
     },
   };
 };
-
 // ============================================================
 // CREATE REQUEST
 // ============================================================
+// export const createQuickRequestService = async (organisationId, data, userId) => {
+//   const connection = await getOrganisationDB(organisationId);
+//   if (!connection.success) return connection;
+
+//   if (!data?.name?.trim()) {
+//     return { success: false, message: "Request name is required" };
+//   }
+//   if (!Array.isArray(data.questions) || data.questions.length === 0) {
+//     return { success: false, message: "At least one question is required" };
+//   }
+
+//   try {
+//     const row = await model.createQuickRequest(connection.db, connection.schema, {
+//       orgId: organisationId,
+//       requestName: data.name.trim(),
+//       description: data.description || "",
+//       status: data.status || "Active",
+//       icon: data.icon || "other",
+//       is_bookable: Boolean(data.is_bookable),
+//       slots: data.slots || [],
+//       max_bookings_per_slot: Number(data.max_bookings_per_slot) || 1,
+//       questions: data.questions,
+//       createdBy: userId,
+//     });
+
+//     return {
+//       success: true,
+//       message: "Quick request created successfully",
+//       data: { id: row.id, name: row.request_name },
+//     };
+//   } catch (error) {
+//     return { success: false, message: error.message };
+//   }
+// };
 export const createQuickRequestService = async (organisationId, data, userId) => {
   const connection = await getOrganisationDB(organisationId);
   if (!connection.success) return connection;
@@ -2190,6 +2226,7 @@ export const createQuickRequestService = async (organisationId, data, userId) =>
       status: data.status || "Active",
       icon: data.icon || "other",
       is_bookable: Boolean(data.is_bookable),
+      booking_mode: data.booking_mode || "slots",
       slots: data.slots || [],
       max_bookings_per_slot: Number(data.max_bookings_per_slot) || 1,
       questions: data.questions,
@@ -2205,7 +2242,6 @@ export const createQuickRequestService = async (organisationId, data, userId) =>
     return { success: false, message: error.message };
   }
 };
-
 // ============================================================
 // UPDATE REQUEST
 // ============================================================
@@ -2286,6 +2322,84 @@ export const updateQuickRequestStatusService = async (
 // ============================================================
 // CREATE RESPONSE (with booking validation)
 // ============================================================
+// export const createQuickRequestResponseService = async (
+//   organisationId,
+//   requestTypeId,
+//   answers,
+//   requestedBy
+// ) => {
+//   const connection = await getOrganisationDB(organisationId);
+//   if (!connection.success) return connection;
+
+//   const request = await model.getQuickRequestById(
+//     connection.db,
+//     connection.schema,
+//     requestTypeId
+//   );
+
+//   if (!request) {
+//     return { success: false, message: "Request type not found" };
+//   }
+//   if (request.status !== "Active") {
+//     return { success: false, message: "This request type is inactive" };
+//   }
+
+//   // ---------- BOOKING VALIDATION ----------
+//   if (request.is_bookable) {
+//     const date = answers?.date;
+//     const slot = answers?.slot;
+
+//     if (!date || !slot) {
+//       return {
+//         success: false,
+//         message: "Date and time slot are required for this request",
+//       };
+//     }
+
+//     const availability = await model.getSlotAvailability(
+//       connection.db,
+//       connection.schema,
+//       requestTypeId,
+//       date
+//     );
+
+//     if (!availability.success) {
+//       return availability;
+//     }
+
+//     const selected = availability.data.find((s) => s.slotId === slot);
+//     if (!selected) {
+//       return { success: false, message: "Invalid time slot selected" };
+//     }
+//     if (!selected.available) {
+//       return {
+//         success: false,
+//         message: "This slot is already fully booked",
+//       };
+//     }
+//   }
+
+//   try {
+//     const result = await model.createQuickRequestResponse(
+//       connection.db,
+//       connection.schema,
+//       {
+//         requestTypeId,
+//         orgId: organisationId,
+//         requestedBy,
+//         answers,
+//       }
+//     );
+
+//     return {
+//       success: true,
+//       message: "Request submitted successfully",
+//       data: result,
+//     };
+//   } catch (error) {
+//     return { success: false, message: error.message };
+//   }
+// };
 export const createQuickRequestResponseService = async (
   organisationId,
   requestTypeId,
@@ -2309,14 +2423,81 @@ export const createQuickRequestResponseService = async (
   }
 
   // ---------- BOOKING VALIDATION ----------
-  if (request.is_bookable) {
-    const date = answers?.date;
-    const slot = answers?.slot;
+  // ---------- BOOKING VALIDATION ----------
+if (request.is_bookable) {
+  const date = answers?.date;
+  const mode = request.booking_mode || "slots";
 
-    if (!date || !slot) {
+  if (!date) {
+    return {
+      success: false,
+      message: "Date is required for this request",
+    };
+  }
+
+  if (mode === "free") {
+    const from = answers?.from;
+    const to = answers?.to;
+
+    if (!from || !to) {
       return {
         success: false,
-        message: "Date and time slot are required for this request",
+        message: "From Time and To Time are required",
+      };
+    }
+
+    if (from >= to) {
+      return {
+        success: false,
+        message: "To Time must be after From Time",
+      };
+    }
+
+    // Check for overlapping ranges
+    const conflictQuery = `
+      SELECT id, answers, status
+      FROM "${connection.schema}".quick_request_responses
+      WHERE request_type_id = $1
+      AND answers->>'date' = $2
+      AND status IN ('Pending', 'Approved');
+    `;
+    const conflictResult = await connection.db.query(conflictQuery, [
+      requestTypeId,
+      date,
+    ]);
+
+    for (const row of conflictResult.rows) {
+      let existing = row.answers;
+      if (typeof existing === "string") {
+        try {
+          existing = JSON.parse(existing);
+        } catch {
+          existing = {};
+        }
+      }
+      existing = existing || {};
+
+      const existingFrom = existing.from;
+      const existingTo = existing.to;
+
+      if (!existingFrom || !existingTo) continue;
+
+      // Overlap: (StartA < EndB) && (EndA > StartB)
+      if (from < existingTo && to > existingFrom) {
+        return {
+          success: false,
+          message: `This time overlaps with an existing booking (${existingFrom} – ${existingTo}). Please choose a different time.`,
+        };
+      }
+    }
+  } else {
+    // Fixed slots
+    const slot = answers?.slot;
+
+    if (!slot) {
+      return {
+        success: false,
+        message: "Time slot is required",
       };
     }
 
@@ -2338,10 +2519,11 @@ export const createQuickRequestResponseService = async (
     if (!selected.available) {
       return {
         success: false,
-        message: "This slot is already fully booked",
+        message: `This slot has reached its capacity of ${selected.maxBookings} bookings`,
       };
     }
   }
+}
 
   try {
     const result = await model.createQuickRequestResponse(
@@ -2551,7 +2733,9 @@ export const updateQuickRequestResponseStatusService = async (
 export const saveAnnouncementOnResponseService = async (
   organisationId,
   responseId,
-  announcement
+  announcement,
+  expiresAt = null,
+  startDate = null
 ) => {
   const connection = await getOrganisationDB(organisationId);
   if (!connection.success) return connection;
@@ -2571,7 +2755,9 @@ export const saveAnnouncementOnResponseService = async (
       connection.db,
       connection.schema,
       responseId,
-      announcement
+      announcement,
+      expiresAt,
+      startDate
     );
 
     return {

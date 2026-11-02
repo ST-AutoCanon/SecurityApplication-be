@@ -1055,7 +1055,7 @@ export const saveAnnouncementOnResponse = async (req, res) => {
   try {
     const organisationId = req.user.organisation_id;
     const { id } = req.params;
-    const { content } = req.body;
+    const { content, expires_at = null, start_date = null } = req.body;
 
     if (!content?.trim()) {
       return res.status(400).json({
@@ -1067,7 +1067,9 @@ export const saveAnnouncementOnResponse = async (req, res) => {
     const result = await saveAnnouncementOnResponseService(
       organisationId,
       id,
-      content.trim()
+      content.trim(),
+      expires_at || null,
+      start_date || null
     );
 
     if (!result.success) {

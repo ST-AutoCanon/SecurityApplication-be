@@ -2,6 +2,8 @@ import masterAuthDB from "../../config/masterAuthDB.js";
 import { getDB } from "../../config/dbFactory.js";
 import { getOrganisationById } from "../../auth/models/organisation.model.js";
 import nodemailer from "nodemailer";
+import { access } from "node:fs/promises";
+import path from "node:path";
 import * as model from "../models/campaign.model.js";
 import * as blockModel from "../models/campaignBlock.model.js";   // ← ADD THIS
 // ===================== GET ALL CAMPAIGNS =====================
@@ -90,8 +92,65 @@ const transporter = nodemailer.createTransport({
 //   `;
 // }
 // ===================== BUILD EMAIL HTML =====================
-function buildEmailHtml(blocks) {
+async function getEmailImageSource(url, attachments) {
+  try {
+    const imageUrl = new URL(url, "http://localhost");
+    const uploadMatch = imageUrl.pathname.match(
+      /(?:^|\/)(?:api\/)?uploads\/(.+)$/i,
+    );
+    if (!uploadMatch) return url;
+
+    const filename = path.basename(decodeURIComponent(uploadMatch[1]));
+    const extension = path.extname(filename).toLowerCase();
+    const contentType = {
+      ".gif": "image/gif",
+      ".jpeg": "image/jpeg",
+      ".jpg": "image/jpeg",
+      ".png": "image/png",
+      ".webp": "image/webp",
+    }[extension];
+    if (!filename || !contentType) return url;
+
+    const uploadDirectories = [
+      path.resolve(process.cwd(), "..", "uploads"),
+      path.resolve(process.cwd(), "uploads"),
+      path.resolve(process.cwd(), "security", "uploads", "campaigns"),
+    ];
+
+    for (const uploadDirectory of uploadDirectories) {
+      const imagePath = path.join(uploadDirectory, filename);
+      try {
+        await access(imagePath);
+        const cid = `campaign-image-${attachments.length}@security-app`;
+        attachments.push({
+          filename,
+          path: imagePath,
+          cid,
+          contentType,
+          contentDisposition: "inline",
+        });
+        return `cid:${cid}`;
+      } catch {
+        // Try the next supported upload directory.
+      }
+    }
+  } catch {
+    return url;
+  }
+
+  return url;
+}
+
+async function buildEmailHtml(blocks) {
   let body = "";
+  const attachments = [];
+  const escapeHtml = (value) =>
+    String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
 
   for (const block of blocks) {
     let content = block.content || {};
@@ -107,20 +166,72 @@ function buildEmailHtml(blocks) {
     const type = block.block_type || block.blockType;
 
     switch (type) {
-           case "logo":
+      case "logo": {
         if (content.url) {
+          const imageSource = await getEmailImageSource(content.url, attachments);
+          const align = content.align || "center";
           body += `
-            <div style="text-align:center;margin-bottom:20px;">
-              <img src="${content.url}" alt="Logo" style="max-height:60px;object-fit:contain;" />
+            <div style="text-align:${align};margin-bottom:20px;">
+              <img src="${imageSource}" alt="Logo" style="max-height:60px;max-width:200px;object-fit:contain;display:inline-block;" />
             </div>`;
         }
         break;
+      }
 
-      case "image":
+      case "image": {
         if (content.url) {
+          const imageSource = await getEmailImageSource(content.url, attachments);
+          const layout = content.imageLayout || "full";
+          const sideText = content.sideContent
+            ? String(content.sideContent)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/\n/g, "<br>")
+            : "";
+
+          if (layout === "full" || !sideText) {
+            // Full width image
+            body += `
+              <div style="margin-bottom:16px;">
+                <img src="${imageSource}" alt="" style="width:100%;max-width:600px;border-radius:8px;display:block;" />
+              </div>`;
+          } else {
+            // Side-by-side layout using table (email-safe)
+            // image left  → image first column
+            // image right → text first column
+            const imageFirst = layout === "left";
+
+            const imageCell = `
+              <td width="45%" valign="top" style="padding:0 8px 0 0;">
+                <img src="${imageSource}" alt="" style="width:100%;max-width:260px;border-radius:8px;display:block;" />
+              </td>`;
+
+            const textCell = `
+              <td width="55%" valign="top" style="padding:0 0 0 8px;font-size:14px;line-height:1.5;color:#334155;">
+                ${sideText}
+              </td>`;
+
+            body += `
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px;">
+                <tr>
+                  ${imageFirst ? imageCell + textCell : textCell + imageCell}
+                </tr>
+              </table>`;
+          }
+        }
+        break;
+      }
+
+      case "document":
+        if (content.url) {
+          const documentName = content.documentName || "Download document";
           body += `
             <div style="margin-bottom:16px;">
-              <img src="${content.url}" alt="" style="width:100%;max-width:600px;border-radius:8px;" />
+              <a href="${escapeHtml(content.url)}"
+                 style="display:inline-block;color:#2563eb;text-decoration:underline;font-size:14px;">
+                ${escapeHtml(documentName)}
+              </a>
             </div>`;
         }
         break;
@@ -153,7 +264,6 @@ function buildEmailHtml(blocks) {
           styles.push(`border-radius:6px`);
         }
 
-        // Basic HTML escape
         const safeText = String(content.text || "")
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
@@ -168,10 +278,10 @@ function buildEmailHtml(blocks) {
         body += `
           <div style="text-align:${content.align || "center"};margin:24px 0;">
             <a href="${content.buttonLink || "#"}"
-               style="display:inline-block;background:#7c3aed;color:#ffffff;
+               style="display:inline-block;background:#2563eb;color:#ffffff;
                       padding:12px 28px;border-radius:8px;font-weight:600;
                       text-decoration:none;font-size:15px;">
-              ${content.buttonText || "Click Here"}
+              ${escapeHtml(content.buttonText || "Click Here")}
             </a>
           </div>`;
         break;
@@ -182,22 +292,28 @@ function buildEmailHtml(blocks) {
     }
   }
 
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head><meta charset="utf-8" /></head>
-    <body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
-      <div style="max-width:600px;margin:30px auto;background:#ffffff;border-radius:12px;overflow:hidden;">
-        <div style="padding:32px 28px;">
-          ${body}
+  return {
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      </head>
+      <body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
+        <div style="max-width:600px;margin:30px auto;background:#ffffff;border-radius:12px;overflow:hidden;">
+          <div style="padding:32px 28px;">
+            ${body}
+          </div>
+          <div style="background:#f8fafc;padding:20px;text-align:center;font-size:12px;color:#94a3b8;">
+            © ${new Date().getFullYear()} Your Company. All rights reserved.
+          </div>
         </div>
-        <div style="background:#f8fafc;padding:20px;text-align:center;font-size:12px;color:#94a3b8;">
-          © ${new Date().getFullYear()} Your Company. All rights reserved.
-        </div>
-      </div>
-    </body>
-    </html>
-  `;
+      </body>
+      </html>
+    `,
+    attachments,
+  };
 }
 
 // ===================== SEND CAMPAIGN =====================
@@ -221,7 +337,7 @@ export const sendCampaignService = async (organisationId, campaignId, emails) =>
     const blocks = await blockModel.getCampaignBlocks(db, schema, campaignId);
 
     // Build HTML
-    const html = buildEmailHtml(blocks);
+    const { html, attachments } = await buildEmailHtml(blocks);
 
     // Clean emails
     const validEmails = emails
@@ -238,10 +354,11 @@ export const sendCampaignService = async (organisationId, campaignId, emails) =>
       to: validEmails.join(", "),
       subject: campaign.subject || "No Subject",
       html,
+      attachments,
     });
 
     // Update status to Sent
-    await model.updateCampaign(db, schema, campaignId, {
+    const sentCampaign = await model.updateCampaign(db, schema, campaignId, {
       campaign_name: campaign.campaign_name,
       channel: campaign.channel,
       category: campaign.category,
@@ -254,6 +371,19 @@ export const sendCampaignService = async (organisationId, campaignId, emails) =>
     return {
       success: true,
       message: `Campaign sent successfully to ${validEmails.length} recipient(s)`,
+      data: {
+        id: String(sentCampaign.id),
+        campaignName: sentCampaign.campaign_name,
+        channel: sentCampaign.channel,
+        category: sentCampaign.category,
+        subject: sentCampaign.subject,
+        preheader: sentCampaign.preheader,
+        status: sentCampaign.status,
+        scheduledAt: sentCampaign.scheduled_at,
+        createdBy: sentCampaign.created_by,
+        createdAt: sentCampaign.created_at,
+        updatedAt: sentCampaign.updated_at,
+      },
     };
   } catch (err) {
     console.error("sendCampaignService error:", err);
