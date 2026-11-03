@@ -1,7 +1,4 @@
 import express from "express";
-import multer from "multer";
-import path from "path";
-import fs from "fs";
 import { auth } from "../../middleware/auth.js"; // ← adjust path if needed
 
 const router = express.Router();
@@ -9,78 +6,50 @@ const router = express.Router();
 // Protect all routes
 router.use(auth);
 
-// ===================== CREATE UPLOAD FOLDER =====================
-const uploadDir = path.join(process.cwd(), "security", "uploads", "campaigns");
+const handleCampaignFileUpload = (fieldName, fileLabel) => async (req, res) => {
+  try {
+    const { upload } = await import("../middleware/upload.js");
 
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+    upload.single(fieldName)(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          success: false,
+          message: err.message || "Upload failed",
+        });
+      }
 
-// ===================== MULTER CONFIG =====================
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (_req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname).toLowerCase() || ".jpg";
-    cb(null, `campaign-img-${unique}${ext}`);
-  },
-});
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: `No ${fileLabel.toLowerCase()} uploaded`,
+        });
+      }
 
-const fileFilter = (_req, file, cb) => {
-  const allowed = [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-  ];
-  if (allowed.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error("Only image files (JPEG, PNG, GIF, WebP) are allowed"), false);
+      const forwardedProto = req.get("x-forwarded-proto") || req.protocol;
+      const forwardedHost = req.get("x-forwarded-host") || req.get("host");
+      const baseUrl = (
+        process.env.PUBLIC_URL || `${forwardedProto}://${forwardedHost}`
+      ).replace(/\/+$/, "");
+
+      return res.status(200).json({
+        success: true,
+        message: `${fileLabel} uploaded successfully`,
+        url: `${baseUrl}/api/uploads/${req.file.filename}`,
+        filename: req.file.filename,
+        originalname: req.file.originalname,
+      });
+    });
+  } catch (err) {
+    console.error(`Campaign ${fileLabel.toLowerCase()} upload error:`, err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || `Failed to upload ${fileLabel.toLowerCase()}`,
+    });
   }
 };
 
-const upload = multer({
-  storage,
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
-  fileFilter,
-});
-
 // ===================== UPLOAD IMAGE =====================
-router.post("/image", upload.single("image"), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No image uploaded",
-      });
-    }
-
-    const forwardedProto = req.get("x-forwarded-proto") || req.protocol;
-    const forwardedHost = req.get("x-forwarded-host") || req.get("host");
-
-    const baseUrl = (
-      process.env.PUBLIC_URL || `${forwardedProto}://${forwardedHost}`
-    ).replace(/\/+$/, "");
-
-    const url = `${baseUrl}/api/uploads/campaigns/${req.file.filename}`;
-
-    return res.status(200).json({
-      success: true,
-      message: "Image uploaded successfully",
-      url,
-      filename: req.file.filename,
-    });
-  } catch (err) {
-    console.error("Campaign image upload error:", err);
-    return res.status(500).json({
-      success: false,
-      message: err.message || "Failed to upload image",
-    });
-  }
-});
+router.post("/image", handleCampaignFileUpload("image", "Image"));
+router.post("/document", handleCampaignFileUpload("file", "Document"));
 
 export default router;
