@@ -107,6 +107,8 @@ import { createApartmentMemberFamilyTable } from "./apartment/apartment_member_f
 import { createAnnouncementsTable } from "./announcementTables.js";
 import { createVendorsServiceProvidersTable } from "./vendors_service_providers.js";
 import { createImportantInformationTable } from "./important_information.js";
+import { createApartmentFlatsTable } from "./apartment/apartment_flats.js"
+import { createApartmentMaintenanceTables } from "./apartment/apartment_maintenance_tables.js";
 
 export const createTemplateTables = async (db, schema, orgType) => {
   if (!db || typeof db.query !== "function") {
@@ -131,9 +133,11 @@ export const createTemplateTables = async (db, schema, orgType) => {
 
       // Required for apartment announcements.
       await createAnnouncementsTable(db, schema);
-
-      await createImportantInformationTable(db, schema);
+await createImportantInformationTable(db, schema);
       await createVendorsServiceProvidersTable(db, schema);
+      
+      await createApartmentFlatsTable(db, schema);
+      await createApartmentMaintenanceTables(db, schema);
       break;
     }
 

@@ -386,7 +386,9 @@ import { createFixedTables } from "../utils/createFixedTables.js";
 import { createTemplateTables } from "../utils/static_templates/createTemplateTables.js";
 //import { createFixedDashboardTable } from "../utils/createFixedDashboardTable.js";
 import { createAnnouncementsTable } from "../utils/static_templates/announcementTables.js";
+import { createApartmentFlatsTable } from "../utils/static_templates/apartment/apartment_flats.js";
 
+import { createApartmentMaintenanceTables } from "../utils/static_templates/apartment/apartment_maintenance_tables.js";
 /* ---------------------------
    GET DB BY ORG TYPE
 ----------------------------*/
@@ -745,6 +747,135 @@ export const migrateExistingAnnouncementTables = async () => {
 
   return {
     success: results.every((item) => item.success),
+    results,
+  };
+};
+
+/**
+ * Repair missing apartment maintenance tables
+ * for all existing apartment organisations.
+ *
+ * Safe to run more than once.
+ * Uses CREATE TABLE IF NOT EXISTS and safe column migrations.
+ */
+export const migrateExistingApartmentMaintenanceTables = async () => {
+  const organisations = await model.getOrganisations();
+  const results = [];
+
+  for (const organisation of organisations) {
+    const type = (organisation.org_type || "").toUpperCase();
+
+    // Only apartment organisations need these tables.
+    if (type !== "APARTMENT") {
+      continue;
+    }
+
+    const schema = organisation.schema_name;
+
+    if (!schema || !/^[a-zA-Z0-9_]+$/.test(schema)) {
+      results.push({
+        organisationId: organisation.id,
+        success: false,
+        message: "Missing or invalid schema name",
+      });
+      continue;
+    }
+
+    try {
+      const db = getDB(type);
+
+      console.log(
+        `[Maintenance Migration] Starting for ${schema}`
+      );
+
+      // Ensure the organisation schema exists.
+      await db.query(
+        `CREATE SCHEMA IF NOT EXISTS "${schema}"`
+      );
+
+      // 1. Create/upgrade apartment flats first.
+      await createApartmentFlatsTable(db, schema);
+
+      // 2. Create/upgrade maintenance tables.
+      await createApartmentMaintenanceTables(db, schema);
+
+      // 3. Verify the required tables.
+      const check = await db.query(
+        `
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = $1
+          AND table_name = ANY($2::text[])
+        `,
+        [
+          schema,
+          [
+            "apartment_flats",
+            "apartment_maintenance_settings",
+            "apartment_maintenance_bhk_rates",
+            "apartment_maintenance_floor_charges",
+            "apartment_maintenance_special_charges",
+            "apartment_maintenance_late_rules",
+            "apartment_maintenance_bills",
+          ],
+        ]
+      );
+
+      const createdTables = check.rows.map(
+        (row) => row.table_name
+      );
+
+      const requiredTables = [
+        "apartment_flats",
+        "apartment_maintenance_settings",
+        "apartment_maintenance_bhk_rates",
+        "apartment_maintenance_floor_charges",
+        "apartment_maintenance_special_charges",
+        "apartment_maintenance_late_rules",
+        "apartment_maintenance_bills",
+      ];
+
+      const missingTables = requiredTables.filter(
+        (table) => !createdTables.includes(table)
+      );
+
+      if (missingTables.length > 0) {
+        throw new Error(
+          `Missing tables: ${missingTables.join(", ")}`
+        );
+      }
+
+      console.log(
+        `[Maintenance Migration] Successfully completed for ${schema}`
+      );
+
+      results.push({
+        organisationId: organisation.id,
+        organisationName: organisation.org_name,
+        schema,
+        success: true,
+        tables: createdTables,
+      });
+
+    } catch (error) {
+      console.error(
+        `[Maintenance Migration] Failed for ${schema}:`,
+        error
+      );
+
+      results.push({
+        organisationId: organisation.id,
+        organisationName: organisation.org_name,
+        schema,
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  return {
+    success: results.every((item) => item.success),
+    message: "Apartment maintenance migration completed",
     results,
   };
 };
