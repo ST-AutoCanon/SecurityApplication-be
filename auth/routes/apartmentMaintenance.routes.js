@@ -141,15 +141,62 @@ const adminOnly = (req, res, next) => {
 
 router.use(adminOnly);
 
+// // Flats
+// router.get("/flats", Controller.getFlats);
+// router.post("/flats", Controller.createFlat);
+// router.put("/flats/:id", Controller.updateFlat);
+// router.delete("/flats/:id", Controller.deleteFlat);
+
+// // Configuration
+// router.get("/", Controller.getConfiguration);
+// router.get("/configuration", Controller.getConfiguration);
+
+// router.get("/settings", Controller.getConfiguration);
+
+// router.put("/settings", Controller.saveSettings);
+
+// // BHK rates
+// router.post("/bhk-rates", Controller.saveBhkRate);
+// router.delete("/bhk-rates/:id", Controller.deleteBhkRate);
+
+// // Floor charges
+// router.post("/floor-charges", Controller.saveFloorCharge);
+// router.delete("/floor-charges/:id", Controller.deleteFloorCharge);
+
+// // Special charges
+// router.post("/special-charges", Controller.createSpecialCharge);
+// router.put("/special-charges/:id", Controller.updateSpecialCharge);
+// router.delete("/special-charges/:id", Controller.deleteSpecialCharge);
+
+// // Late rules
+// router.put("/late-rules", Controller.saveLateRule);
+
+// // Preview and bills
+// // router.get("/flats", auth, adminOnly, controller.getFlats);
+// router.get("/flats", Controller.getFlats);
+
+// router.get("/preview", Controller.previewMaintenance);
+// router.post("/generate-bills", Controller.generateBills);
+// router.get("/bills", Controller.getBills);
+
+
+
 // Flats
 router.get("/flats", Controller.getFlats);
 router.post("/flats", Controller.createFlat);
 router.put("/flats/:id", Controller.updateFlat);
 router.delete("/flats/:id", Controller.deleteFlat);
+router.put(
+    "/flats/:flatId/details",
+    Controller.updateFlatDetails
+);
+
+
 
 // Configuration
 router.get("/", Controller.getConfiguration);
 router.get("/configuration", Controller.getConfiguration);
+router.get("/settings", Controller.getConfiguration);
 router.put("/settings", Controller.saveSettings);
 
 // BHK rates
@@ -166,11 +213,10 @@ router.put("/special-charges/:id", Controller.updateSpecialCharge);
 router.delete("/special-charges/:id", Controller.deleteSpecialCharge);
 
 // Late rules
-router.put("/late-rules", Controller.saveLateRule);
+router.put("/late-rules", Controller.replaceLateRules);
 
 // Preview and bills
 router.get("/preview", Controller.previewMaintenance);
 router.post("/generate-bills", Controller.generateBills);
 router.get("/bills", Controller.getBills);
-
 export default router;
